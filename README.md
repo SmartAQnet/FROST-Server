@@ -1,25 +1,40 @@
-# SensorThingsServer
-A Server implementation of the OGC SensorThings API.
-[![Build Status](https://travis-ci.org/FraunhoferIOSB/SensorThingsServer.svg?branch=master)](https://travis-ci.org/FraunhoferIOSB/SensorThingsServer)
+# FROST-Server [![Build Status](https://travis-ci.org/FraunhoferIOSB/FROST-Server.svg?branch=master)](https://travis-ci.org/FraunhoferIOSB/FROST-Server)
+
+![FROST-Server Logo](https://raw.githubusercontent.com/FraunhoferIOSB/FROST-Server/master/images/FROST-Server-darkgrey.png)
+<a href="http://www.opengeospatial.org/resource/products/details/?pid=1371"><img align="right" src ="https://raw.githubusercontent.com/FraunhoferIOSB/FROST-Server/master/images/Certified_OGC_Compliant_Logo_Web.png"/></a>
+
+A Server implementation of the OGC SensorThings API. The **FR**aunhofer **O**pensource **S**ensor**T**hings-Server
+is the first complete, open-source implementation of the OGC SensorThings API Part 1: Sensing.
+
 
 ## Compliance Testing Status:
 
-| Conformance Class                     | Reference | Implemented |Test Status         |
-|---------------------------------------|-----------|-------------|--------------------|
-| Sensing Core                          | A.1       | Yes         | 6 / 6              |
-| Filtering Extension                   | A.2       | Yes         | 41 / 41            |
-| Create-Update-Delete                  | A.3       | Yes         | 14 / 14            |
-| Batch Request                         | A.4       | No          | No tests available |
-| Sensing MultiDatastream Extension     | A.5       | Yes         | 18 / 18            |
-| Sensing Data Array Extension          | A.6       | Yes         | 2 / 2              |
-| MQTT Extension for Create and Update  | A.7       | Yes         | 4 / 4              |
-| MQTT Extension for Receiving Updates  | A.8       | Yes         | 13 / 13            |
+| Conformance Class                     | Reference | Implemented |Test Status |
+|:--------------------------------------|:---------:|:-----------:|-----------:|
+| Sensing Core                          | A.1       | Yes         |   6 /  6   |
+| Filtering Extension                   | A.2       | Yes         |  42 / 42   |
+| Create-Update-Delete                  | A.3       | Yes         |  14 / 14   |
+| Batch Request                         | A.4       | Yes         |   0 /  0   |
+| Sensing MultiDatastream Extension     | A.5       | Yes         |  18 / 18   |
+| Sensing Data Array Extension          | A.6       | Yes         |   2 /  2   |
+| MQTT Extension for Create and Update  | A.7       | Yes         |   4 /  4   |
+| MQTT Extension for Receiving Updates  | A.8       | Yes         |  13 / 13   |
 
 We have extended the official test suit with extra tests that can be found [here](https://github.com/FraunhoferIOSB/ets-sta10).
 The official test suit is fully passed.
-See the wiki page [features](https://github.com/FraunhoferIOSB/SensorThingsServer/wiki/Features) for more details.
+See the wiki page [features](https://github.com/FraunhoferIOSB/FROST-Server/wiki/Features) for more details.
 
 ## The very short and crude installation instructions
+
+See the [wiki](https://github.com/FraunhoferIOSB/FROST-Server/wiki) for longer installation instructions.
+
+### Compiling
+
+1. Checkout the project from github: `git clone https://github.com/FraunhoferIOSB/FROST-Server.git`
+2. Go to the project root (The top-most directory with a pom.xml) `cd FROST-Server`
+3. Give the command `mvn clean install`
+   This should build the war file in `FROST-Server.HTTP/target/`
+
 
 ### Database installation
 
@@ -33,13 +48,6 @@ entry either in server.xml, in `$CATALINA_BASE/conf/[enginename]/[hostname]/appn
 or in `/META-INF/context.xml` inside the war file. If you are running the application
 from your IDE, it is easiest to change the context.xml file in the war file.
 
-There are two ways to configure the database: Using [JNDI](http://tomcat.apache.org/tomcat-8.0-doc/jndi-datasource-examples-howto.html#PostgreSQL)
-or directly.
-
-#### JNDI
-
-This method uses connection pooling and is faster.
-
 1. Copy the [Postgres JDBC jar](http://repo.maven.apache.org/maven2/org/postgresql/postgresql/9.4.1212/postgresql-9.4.1212.jar)
 and the [postgis jar](http://repo.maven.apache.org/maven2/net/postgis/postgis-jdbc/2.2.1/postgis-jdbc-2.2.1.jar)
 to `$CATALINA_HOME/lib`.
@@ -52,38 +60,14 @@ to `$CATALINA_HOME/lib`.
             username="sensorthings" password="ChangeMe"
             maxTotal="20" maxIdle="10" maxWaitMillis="-1"/>
 
-3. Tell the application how to find the datasource in the Context:
-
-        <Parameter name="db_jndi_datasource" value="jdbc/sensorThings" description="JNDI data source name"/>
-
-   The value of the Parameter and the name of the Resource have to be the same, but
-   can be anything you like.
-
-#### Direct database connection
-
-This method does not support connection pooling.
-
-1. Copy the [Postgres JDBC jar](http://repo.maven.apache.org/maven2/org/postgresql/postgresql/9.4.1209.jre7/postgresql-9.4.1209.jre7.jar)
-   and the [postgis jar](http://repo.maven.apache.org/maven2/net/postgis/postgis-jdbc/2.2.0/postgis-jdbc-2.2.0.jar)
-   to `WEB-INF/lib` or `$CATALINA_HOME/lib`.
-2. Configure the database resource in the Context:
-
-        <Parameter name="db_driver" value="org.postgresql.Driver" description="Database driver classname"/>
-        <Parameter name="db_url" value="jdbc:postgresql://localhost:5432/sta" description="Database connection URL"/>
-        <Parameter name="db_username" value="postgres" description="Database username"/>
-        <Parameter name="db_password" value="1qay!QAY" description="Database password"/>
-
-
-### Compiling
-
-1. Go to the project root (The top-most directory with a pom.xml)
-2. mvn clean install
-   This should build the war file in SensorThingsServer/target/
-
 
 ### Database initialisation or upgrade
 
-1. Browse to http://localhost:8080/SensorThingsService/DatabaseStatus
+1. Choose which backend to use, by configuring the persistence.persistenceManagerImplementationClass option:
+    * Default value, using Long values for entity ids, generated in sequence: de.fraunhofer.iosb.ilt.sta.persistence.postgres.longid.PostgresPersistenceManagerLong
+    * Using String values for entity ids, with new values generated using uuid_generate_v1mc(): de.fraunhofer.iosb.ilt.sta.persistence.postgres.stringid.PostgresPersistenceManagerString
+    * Using uuid values for entity ids, with new values generated using uuid_generate_v1mc(): de.fraunhofer.iosb.ilt.sta.persistence.postgres.uuidid.PostgresPersistenceManagerUuid
+2. Browse to http://localhost:8080/FROST/DatabaseStatus
 
 This should initialise/update the database to the latest version and the service
 should be ready for use.
@@ -113,7 +97,6 @@ from your IDE, it is easiest to change the context.xml file in the war file. It 
 the following options:
 
 * SensorThings API settings
-  * `ApiVersion`: The version tag of the API used in the URL.
   * `serviceRootUrl`: The base URL of the SensorThings Server without version.
   * `defaultCount`: The default value for the $count query option.
   * `defaultTop`: The default value for the $top query option.
@@ -133,27 +116,77 @@ the following options:
   * `mqtt.WebsocketPort`: The port the MQTT server is reachable via WebSocket.
 * persistence settings
   * `persistence.persistenceManagerImplementationClass`: The java class used for persistence (must implement PersistenceManaher interface)
-  * JNDI (Either use this _or_ direct, not both
-    * `persistence.db_jndi_datasource`: JNDI data source name
-  * Direct (Either use this _or_ JNDI, not both
-    * `persistence.db_driver`: Database driver classname
-    * `persistence.db_url`: Database connection URL
-    * `persistence.db_username`: Database username
-    * `persistence.db_password`: Database password
+  * `persistence.alwaysOrderbyId`: Always add an 'orderby=id asc' to queries to ensure consistent paging.
+  * `persistence.db_jndi_datasource`: JNDI data source name
 
 ## Docker support
 
-There's also the possibility to run SensorThingsServer and the needed database inside a Docker container.
+There's also the possibility to run FROST-Server and the needed database inside a Docker container.
 This dependency is specified inside the ```docker-compose.yaml``` file.
-To build and start a container including the PostGIS database run:
 
-```
-mvn clean install
-docker-compose up --build
-```
+You can use the prebuild [docker image](https://hub.docker.com/r/fraunhoferiosb/frost-server/) by
+running ```docker-compose up```. This will download the latest version of the FROST-Server and starts it
+together with the needed database. You can access the server by opening ```http://localhost:8080/FROST-Server/``` in your browser.
+
+If you want to build your own docker image, you can do this by calling `mvn dockerfile:build -pl FROST-Server.HTTP`.
 
 All data is stored inside the PostGIS database. To keep this state there's a volume automatically mapped to the PostGIS container.
 For more information see the ```docker-compose.yaml``` file and the [PostGIS container documentation](https://hub.docker.com/r/mdillon/postgis/)
+
+To have a proper configuration of your server you need to create your own `context.xml` file.
+You can use `FROST-Server.HTTP/src/main/webapp/META-INF/context.xml` as template.
+Make sure your adapted file is located in `$CATALINA_HOME/conf/Catalina/localhost/FROST-Server.xml`.
+
+## Standalone Spring Boot
+
+If you prefer to not use Tomcat, [Kinota Server](https://github.com/kinota/kinota-server) is a
+ Spring Boot application that makes it easy to run Fraunhofer IOSB FROST-Server in cloud environments.
+
+
+## Wildfly 10
+
+If you prefer not to use Tomcat but [Wildfly](https://github.com/wildfly/wildfly) it is possible to run FROST-Server on it.
+
+Create a directory $WILDFLY_HOME/modules/org/postgresql/main and add both [Postgres JDBC jar](http://repo.maven.apache.org/maven2/org/postgresql/postgresql/9.4.1212/postgresql-9.4.1212.jar)
+and the [postgis jar](http://repo.maven.apache.org/maven2/net/postgis/postgis-jdbc/2.2.1/postgis-jdbc-2.2.1.jar) to it. Create a file named module.xml and add the following:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns="urn:jboss:module:1.0" name="org.postgresql">
+  <resources>
+    <resource-root path="postgresql-9.4.1212.jar"/>
+    <resource-root path="postgis-jdbc-2.2.1.jar"/>
+  </resources>
+  <dependencies>
+    <module name="javax.api"/>
+    <module name="javax.transaction.api"/>
+  </dependencies>
+</module>
+```
+
+Add a datasource to $WILDFLY_HOME/standalone/configuration/[standalone.xml]
+Example:
+
+```xml
+<subsystem xmlns="urn:jboss:domain:datasources:4.0">
+  <datasources>
+    <datasource jta="true" jndi-name="java:/comp/env/jdbc/sensorThings" pool-name="Sensorthings" enabled="true" use-ccm="true">
+        <connection-url>jdbc:postgresql://localhost:5432/sensorthings</connection-url>
+        <driver-class>org.postgresql.Driver</driver-class>
+        <driver>postgres</driver>
+        <security>
+          <user-name>sensorthings</user-name>
+          <password>ChangeMe</password>
+        </security>
+        <validation>
+        <valid-connection-checker class-name="org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLValidConnectionChecker"/>
+          <background-validation>true</background-validation>
+          <exception-sorter class-name="org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter"/>
+        </validation>
+    </datasource>
+  </datasources>
+</subsystem>
+```
 
 
 # Authors

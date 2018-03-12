@@ -2,9 +2,10 @@ version: '2'
 
 services:
   web:
-    build: .
+    image: fraunhoferiosb/frost-server:latest
     ports:
       - 8080:8080
+      - 1883:1883
     depends_on:
       - database
 
@@ -15,6 +16,6 @@ services:
       - POSTGRES_USER=sensorthings
       - POSTGRES_PASSWORD=ChangeMe
     volumes:
-        - postgis_volume:/var/lib/postgresql/data
+      - postgis_volume:/var/lib/postgresql/data
 volumes:
     postgis_volume:
