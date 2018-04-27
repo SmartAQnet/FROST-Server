@@ -1,0 +1,5 @@
+
+include::architecture-packages.adoc[]
+include::docker.adoc[]
+include::postgresql.adoc[]
+include::settings.adoc[]
