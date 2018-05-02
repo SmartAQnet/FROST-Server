@@ -15,44 +15,57 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 
 /**
+ * MixIn to ensure that unitOfMeasurement is always included like stated in the
+ * standard (p28, Table 8-9)
  *
  * @author jab
  */
-public abstract class ObservationMixIn {
+public abstract class DatastreamMixIn {
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.ALWAYS)
+    public abstract UnitOfMeasurement getUnitOfMeasurement();
 
     @JsonIgnore
     public abstract EntityType getEntityType();
 
     @JsonIgnore
+    public abstract boolean isSetName();
+
+    @JsonIgnore
+    public abstract boolean isSetDescription();
+
+    @JsonIgnore
+    public abstract boolean isSetObservationType();
+
+    @JsonIgnore
+    public abstract boolean isSetObservedArea();
+
+    @JsonIgnore
     public abstract boolean isSetPhenomenonTime();
+
+    @JsonIgnore
+    public abstract boolean isSetProperties();
 
     @JsonIgnore
     public abstract boolean isSetResultTime();
 
     @JsonIgnore
-    public abstract boolean isSetResult();
+    public abstract boolean isSetSensor();
 
     @JsonIgnore
-    public abstract boolean isSetResultQuality();
+    public abstract boolean isSetObservedProperty();
 
     @JsonIgnore
-    public abstract boolean isSetValidTime();
+    public abstract boolean isSetThing();
 
     @JsonIgnore
-    public abstract boolean isSetParameters();
-
-    @JsonIgnore
-    public abstract boolean isSetDatastream();
-
-    @JsonIgnore
-    public abstract boolean isSetMultiDatastream();
-
-    @JsonIgnore
-    public abstract boolean isSetFeatureOfInterest();
+    public abstract boolean isSetUnitOfMeasurement();
 }

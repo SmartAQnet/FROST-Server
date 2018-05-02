@@ -15,29 +15,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.fraunhofer.iosb.ilt.sta.path.EntityType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import java.util.Map;
 
 /**
+ * Needed to prevent serialisation of empty GeoJson Feature.properties which is
+ * by default marked to be serialised always which is not wanted by STA.
  *
  * @author jab
  */
-public abstract class ObservedPropertyMixIn {
+public abstract class FeatureMixIn {
 
-    @JsonIgnore
-    public abstract EntityType getEntityType();
-
-    @JsonIgnore
-    public abstract boolean isSetName();
-
-    @JsonIgnore
-    public abstract boolean isSetDefinition();
-
-    @JsonIgnore
-    public abstract boolean isSetDescription();
-
-    @JsonIgnore
-    public abstract boolean isSetProperties();
+    @JsonInclude(Include.NON_EMPTY)
+    public abstract Map<String, Object> getProperties();
 }

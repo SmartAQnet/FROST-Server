@@ -15,36 +15,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.fraunhofer.iosb.ilt.sta.path.EntityType;
-import de.fraunhofer.iosb.ilt.sta.json.serialize.custom.CustomSerialization;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
 
 /**
  *
  * @author jab
  */
-public abstract class FeatureOfInterestMixIn {
+public abstract class EntitySetResultMixIn {
 
-    @CustomSerialization
-    public abstract Object getFeature();
-
-    @JsonIgnore
-    public abstract EntityType getEntityType();
-
-    @JsonIgnore
-    public abstract boolean isSetName();
-
-    @JsonIgnore
-    public abstract boolean isSetDescription();
-
-    @JsonIgnore
-    public abstract boolean isSetEncodingType();
-
-    @JsonIgnore
-    public abstract boolean isSetFeature();
-
-    @JsonIgnore
-    public abstract boolean isSetProperties();
+    @JsonProperty("value")
+    public abstract EntitySet getValues();
 }

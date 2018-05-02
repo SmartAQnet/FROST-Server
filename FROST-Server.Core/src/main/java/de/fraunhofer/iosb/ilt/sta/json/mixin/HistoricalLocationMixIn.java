@@ -15,17 +15,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 
 /**
  *
  * @author jab
  */
-public abstract class EntitySetResultMixIn {
+public abstract class HistoricalLocationMixIn {
 
-    @JsonProperty("value")
-    public abstract EntitySet getValues();
+    @JsonIgnore
+    public abstract EntityType getEntityType();
+
+    @JsonIgnore
+    public abstract boolean isSetTime();
+
+    @JsonIgnore
+    public abstract boolean isSetThing();
 }

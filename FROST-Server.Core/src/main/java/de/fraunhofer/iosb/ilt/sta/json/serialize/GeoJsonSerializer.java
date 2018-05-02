@@ -17,7 +17,7 @@
  */
 package de.fraunhofer.iosb.ilt.sta.json.serialize;
 
-import de.fraunhofer.iosb.ilt.sta.model.mixin.FeatureMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.FeatureMixIn;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

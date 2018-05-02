@@ -15,16 +15,36 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.fraunhofer.iosb.ilt.sta.path.EntityType;
+import de.fraunhofer.iosb.ilt.sta.json.serialize.custom.CustomSerialization;
 
 /**
- * MixIn to ensure that unitOfMeasurement is always included like stated in the standard (p28, Table 8-9)
  *
  * @author jab
  */
-@JsonSerialize(include = JsonSerialize.Inclusion.ALWAYS)
-public abstract class UnitOfMeasurementMixIn {
+public abstract class FeatureOfInterestMixIn {
 
+    @CustomSerialization
+    public abstract Object getFeature();
+
+    @JsonIgnore
+    public abstract EntityType getEntityType();
+
+    @JsonIgnore
+    public abstract boolean isSetName();
+
+    @JsonIgnore
+    public abstract boolean isSetDescription();
+
+    @JsonIgnore
+    public abstract boolean isSetEncodingType();
+
+    @JsonIgnore
+    public abstract boolean isSetFeature();
+
+    @JsonIgnore
+    public abstract boolean isSetProperties();
 }

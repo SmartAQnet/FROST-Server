@@ -15,18 +15,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 
 /**
- * MixIn to ensure that unitOfMeasurement is always included like stated in the
- * standard (p28, Table 8-9)
  *
  * @author jab
  */
-public abstract class MultiDatastreamMixIn {
+public abstract class ThingMixIn {
 
     @JsonIgnore
     public abstract EntityType getEntityType();
@@ -38,32 +36,5 @@ public abstract class MultiDatastreamMixIn {
     public abstract boolean isSetDescription();
 
     @JsonIgnore
-    public abstract boolean isSetObservationType();
-
-    @JsonIgnore
-    public abstract boolean isSetMultiObservationDataTypes();
-
-    @JsonIgnore
-    public abstract boolean isSetObservedArea();
-
-    @JsonIgnore
-    public abstract boolean isSetPhenomenonTime();
-
-    @JsonIgnore
     public abstract boolean isSetProperties();
-
-    @JsonIgnore
-    public abstract boolean isSetResultTime();
-
-    @JsonIgnore
-    public abstract boolean isSetSensor();
-
-    @JsonIgnore
-    public abstract boolean isSetObservedProperties();
-
-    @JsonIgnore
-    public abstract boolean isSetThing();
-
-    @JsonIgnore
-    public abstract boolean isSetUnitOfMeasurements();
 }

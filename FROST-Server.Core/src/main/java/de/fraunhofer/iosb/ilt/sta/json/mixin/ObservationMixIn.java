@@ -15,57 +15,44 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.sta.model.mixin;
+package de.fraunhofer.iosb.ilt.sta.json.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 
 /**
- * MixIn to ensure that unitOfMeasurement is always included like stated in the
- * standard (p28, Table 8-9)
  *
  * @author jab
  */
-public abstract class DatastreamMixIn {
-
-    @JsonSerialize(include = JsonSerialize.Inclusion.ALWAYS)
-    public abstract UnitOfMeasurement getUnitOfMeasurement();
+public abstract class ObservationMixIn {
 
     @JsonIgnore
     public abstract EntityType getEntityType();
 
     @JsonIgnore
-    public abstract boolean isSetName();
-
-    @JsonIgnore
-    public abstract boolean isSetDescription();
-
-    @JsonIgnore
-    public abstract boolean isSetObservationType();
-
-    @JsonIgnore
-    public abstract boolean isSetObservedArea();
-
-    @JsonIgnore
     public abstract boolean isSetPhenomenonTime();
-
-    @JsonIgnore
-    public abstract boolean isSetProperties();
 
     @JsonIgnore
     public abstract boolean isSetResultTime();
 
     @JsonIgnore
-    public abstract boolean isSetSensor();
+    public abstract boolean isSetResult();
 
     @JsonIgnore
-    public abstract boolean isSetObservedProperty();
+    public abstract boolean isSetResultQuality();
 
     @JsonIgnore
-    public abstract boolean isSetThing();
+    public abstract boolean isSetValidTime();
 
     @JsonIgnore
-    public abstract boolean isSetUnitOfMeasurement();
+    public abstract boolean isSetParameters();
+
+    @JsonIgnore
+    public abstract boolean isSetDatastream();
+
+    @JsonIgnore
+    public abstract boolean isSetMultiDatastream();
+
+    @JsonIgnore
+    public abstract boolean isSetFeatureOfInterest();
 }
