@@ -35,21 +35,23 @@ public class Thing extends AbstractEntity {
     private String name;
     private String description;
     private Map<String, Object> properties;
-    private EntitySet<Location> locations; // 0..*
 
-    private EntitySet<HistoricalLocation> historicalLocations; // 0..*
-    private EntitySet<Datastream> datastreams; // 0..*
-    private EntitySet<MultiDatastream> multiDatastreams; // 0..*
+    private EntitySet<Datastream> datastreams;
+    private EntitySet<HistoricalLocation> historicalLocations;
+    private EntitySet<Location> locations;
+    private EntitySet<MultiDatastream> multiDatastreams;
+    private EntitySet<TaskingCapability> taskingCapabilities;
 
     private boolean setName;
     private boolean setDescription;
     private boolean setProperties;
 
     public Thing() {
-        this.locations = new EntitySetImpl<>(EntityType.Location);
-        this.historicalLocations = new EntitySetImpl<>(EntityType.HistoricalLocation);
-        this.datastreams = new EntitySetImpl<>(EntityType.Datastream);
-        this.multiDatastreams = new EntitySetImpl<>(EntityType.MultiDatastream);
+        locations = new EntitySetImpl<>(EntityType.Location);
+        historicalLocations = new EntitySetImpl<>(EntityType.HistoricalLocation);
+        datastreams = new EntitySetImpl<>(EntityType.Datastream);
+        multiDatastreams = new EntitySetImpl<>(EntityType.MultiDatastream);
+        taskingCapabilities = new EntitySetImpl<>(EntityType.TaskingCapability);
     }
 
     public Thing(Id id,
@@ -61,7 +63,8 @@ public class Thing extends AbstractEntity {
             EntitySet<Location> locations,
             EntitySet<HistoricalLocation> historicalLocations,
             EntitySet<Datastream> datastreams,
-            EntitySet<MultiDatastream> multiDatastreams) {
+            EntitySet<MultiDatastream> multiDatastreams,
+            EntitySet<TaskingCapability> taskingCapabilities) {
         super(id, selfLink, navigationLink);
         this.name = name;
         this.description = description;
@@ -72,6 +75,7 @@ public class Thing extends AbstractEntity {
         this.historicalLocations = historicalLocations;
         this.datastreams = datastreams;
         this.multiDatastreams = multiDatastreams;
+        this.taskingCapabilities = taskingCapabilities;
     }
 
     @Override
@@ -81,6 +85,7 @@ public class Thing extends AbstractEntity {
 
     @Override
     public void setEntityPropertiesSet() {
+        setName = true;
         setDescription = true;
         setProperties = true;
     }
@@ -111,6 +116,10 @@ public class Thing extends AbstractEntity {
 
     public EntitySet<MultiDatastream> getMultiDatastreams() {
         return multiDatastreams;
+    }
+
+    public EntitySet<TaskingCapability> getTaskingCapabilities() {
+        return taskingCapabilities;
     }
 
     public boolean isSetName() {
@@ -157,6 +166,10 @@ public class Thing extends AbstractEntity {
 
     public void setMultiDatastreams(EntitySet<MultiDatastream> multiDatastreams) {
         this.multiDatastreams = multiDatastreams;
+    }
+
+    public void setTaskingCapabilities(EntitySet<TaskingCapability> taskingCapabilities) {
+        this.taskingCapabilities = taskingCapabilities;
     }
 
     @Override

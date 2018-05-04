@@ -23,20 +23,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import de.fraunhofer.iosb.ilt.sta.formatter.DataArrayResult;
 import de.fraunhofer.iosb.ilt.sta.formatter.DataArrayValue;
-import de.fraunhofer.iosb.ilt.sta.json.serialize.custom.CustomSerializationManager;
-import de.fraunhofer.iosb.ilt.sta.model.Datastream;
-import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
-import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
-import de.fraunhofer.iosb.ilt.sta.model.Location;
-import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
-import de.fraunhofer.iosb.ilt.sta.model.Observation;
-import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
-import de.fraunhofer.iosb.ilt.sta.model.Sensor;
-import de.fraunhofer.iosb.ilt.sta.model.Thing;
-import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
-import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
-import de.fraunhofer.iosb.ilt.sta.model.ext.EntitySetResult;
-import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.ActuatorMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.DatastreamMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.EntitySetResultMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.FeatureOfInterestMixIn;
@@ -46,8 +33,27 @@ import de.fraunhofer.iosb.ilt.sta.json.mixin.MultiDatastreamMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ObservationMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ObservedPropertyMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.SensorMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.TaskMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.TaskingCapabilityMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ThingMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.UnitOfMeasurementMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.serialize.custom.CustomSerializationManager;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
+import de.fraunhofer.iosb.ilt.sta.model.Datastream;
+import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
+import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
+import de.fraunhofer.iosb.ilt.sta.model.Location;
+import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
+import de.fraunhofer.iosb.ilt.sta.model.Observation;
+import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
+import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
+import de.fraunhofer.iosb.ilt.sta.model.Thing;
+import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
+import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
+import de.fraunhofer.iosb.ilt.sta.model.ext.EntitySetResult;
+import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.sta.path.Property;
 import java.io.IOException;
 import java.util.List;
@@ -72,6 +78,7 @@ public class EntityFormatter {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         mapper.setPropertyNamingStrategy(new EntitySetCamelCaseNamingStrategy());
+        mapper.addMixIn(Actuator.class, ActuatorMixIn.class);
         mapper.addMixIn(Datastream.class, DatastreamMixIn.class);
         mapper.addMixIn(MultiDatastream.class, MultiDatastreamMixIn.class);
         mapper.addMixIn(FeatureOfInterest.class, FeatureOfInterestMixIn.class);
@@ -80,6 +87,8 @@ public class EntityFormatter {
         mapper.addMixIn(Observation.class, ObservationMixIn.class);
         mapper.addMixIn(ObservedProperty.class, ObservedPropertyMixIn.class);
         mapper.addMixIn(Sensor.class, SensorMixIn.class);
+        mapper.addMixIn(Task.class, TaskMixIn.class);
+        mapper.addMixIn(TaskingCapability.class, TaskingCapabilityMixIn.class);
         mapper.addMixIn(Thing.class, ThingMixIn.class);
         mapper.addMixIn(UnitOfMeasurement.class, UnitOfMeasurementMixIn.class);
         mapper.addMixIn(EntitySetResult.class, EntitySetResultMixIn.class);
@@ -113,38 +122,6 @@ public class EntityFormatter {
 
     public String writeEntityCollection(EntitySet entityCollection) throws IOException {
         return mapper.writeValueAsString(new EntitySetResult(entityCollection));
-    }
-
-    public String writeDatastream(Datastream datastream) throws IOException {
-        return writeEntity(datastream);
-    }
-
-    public String writeFeatureOfInterest(FeatureOfInterest featureOfInterest) throws IOException {
-        return writeEntity(featureOfInterest);
-    }
-
-    public String writeHistoricalLocation(HistoricalLocation historicalLocation) throws IOException {
-        return writeEntity(historicalLocation);
-    }
-
-    public String writeLocation(Location location) throws IOException {
-        return writeEntity(location);
-    }
-
-    public String writeObservation(Observation observation) throws IOException {
-        return writeEntity(observation);
-    }
-
-    public String writeObservedProperty(ObservedProperty observedProperty) throws IOException {
-        return writeEntity(observedProperty);
-    }
-
-    public String writeSensor(Sensor sensor) throws IOException {
-        return writeEntity(sensor);
-    }
-
-    public String writeThing(Thing thing) throws IOException {
-        return writeEntity(thing);
     }
 
     public String writeObject(Object object) throws IOException {

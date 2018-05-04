@@ -27,6 +27,8 @@ import java.util.Collection;
  */
 public enum NavigationProperty implements Property {
 
+    Actuator(EntityType.Actuator, false),
+    Actuators(EntityType.Actuator, true),
     Datastream(EntityType.Datastream, false),
     Datastreams(EntityType.Datastream, true),
     MultiDatastream(EntityType.MultiDatastream, false),
@@ -39,6 +41,10 @@ public enum NavigationProperty implements Property {
     ObservedProperty(EntityType.ObservedProperty, false),
     ObservedProperties(EntityType.ObservedProperty, true),
     Sensor(EntityType.Sensor, false),
+    Task(EntityType.Task, false),
+    Tasks(EntityType.Task, true),
+    TaskingCapability(EntityType.TaskingCapability, false),
+    TaskingCapabilities(EntityType.TaskingCapability, true),
     Thing(EntityType.Thing, false),
     Things(EntityType.Thing, true);
 

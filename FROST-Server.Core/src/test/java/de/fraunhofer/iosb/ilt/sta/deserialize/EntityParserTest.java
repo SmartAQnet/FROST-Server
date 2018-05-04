@@ -17,9 +17,10 @@
  */
 package de.fraunhofer.iosb.ilt.sta.deserialize;
 
-import de.fraunhofer.iosb.ilt.sta.json.deserialize.EntityParser;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import de.fraunhofer.iosb.ilt.sta.formatter.DataArrayValue;
+import de.fraunhofer.iosb.ilt.sta.json.deserialize.EntityParser;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.sta.model.Location;
@@ -27,7 +28,10 @@ import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
+import de.fraunhofer.iosb.ilt.sta.model.builder.ActuatorBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.DatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.FeatureOfInterestBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.LocationBuilder;
@@ -35,14 +39,16 @@ import de.fraunhofer.iosb.ilt.sta.model.builder.MultiDatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ObservationBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ObservedPropertyBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.SensorBuilder;
+import de.fraunhofer.iosb.ilt.sta.model.builder.TaskBuilder;
+import de.fraunhofer.iosb.ilt.sta.model.builder.TaskingCapabilityBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ThingBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.UnitOfMeasurementBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySetImpl;
-import de.fraunhofer.iosb.ilt.sta.model.ext.TimeInstant;
-import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.sta.model.core.IdLong;
 import de.fraunhofer.iosb.ilt.sta.model.core.IdString;
+import de.fraunhofer.iosb.ilt.sta.model.ext.TimeInstant;
+import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 import de.fraunhofer.iosb.ilt.sta.util.TestHelper;
 import java.io.IOException;
@@ -80,6 +86,62 @@ public class EntityParserTest {
 
     @After
     public void tearDown() {
+    }
+
+    @Test
+    public void readActuator_Basic() throws IOException {
+        String json = "{\n"
+                + "    \"name\": \"SensorUp Tempomatic 2000\",\n"
+                + "    \"description\": \"SensorUp Tempomatic 2000\",\n"
+                + "    \"encodingType\": \"http://schema.org/description\",\n"
+                + "    \"metadata\": \"Calibration date:  Jan 1, 2014\",\n"
+                + "    \"properties\": {\"prop1\": 1}"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("prop1", 1);
+        Actuator expectedResult = new ActuatorBuilder()
+                .setName("SensorUp Tempomatic 2000")
+                .setDescription("SensorUp Tempomatic 2000")
+                .setEncodingType("http://schema.org/description")
+                .setMetadata("Calibration date:  Jan 1, 2014")
+                .setProperties(parameters)
+                .build();
+        Actuator result = entityParser.parseActuator(json);
+        assertEquals(expectedResult, result);
+        assert (result.isSetDescription()
+                && result.isSetEncodingType()
+                && result.isSetMetadata()
+                && result.isSetName()
+                && result.isSetProperties());
+    }
+
+    @Test
+    public void readActuator_WithLink() throws IOException {
+        String json = "{\n"
+                + "    \"name\": \"SensorUp Tempomatic 2000\",\n"
+                + "    \"description\": \"SensorUp Tempomatic 2000\",\n"
+                + "    \"encodingType\": \"http://schema.org/description\",\n"
+                + "    \"metadata\": \"Calibration date:  Jan 1, 2014\",\n"
+                + "    \"properties\": {\"prop1\": 1},\n"
+                + "    \"TaskingCapabilities\": [{\"@iot.id\": 1}]"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("prop1", 1);
+        Actuator expectedResult = new ActuatorBuilder()
+                .setName("SensorUp Tempomatic 2000")
+                .setDescription("SensorUp Tempomatic 2000")
+                .setEncodingType("http://schema.org/description")
+                .setMetadata("Calibration date:  Jan 1, 2014")
+                .setProperties(parameters)
+                .addTaskingCapability(new TaskingCapabilityBuilder().setId(new IdLong(1)).build())
+                .build();
+        Actuator result = entityParser.parseActuator(json);
+        assertEquals(expectedResult, result);
+        assert (result.isSetDescription()
+                && result.isSetEncodingType()
+                && result.isSetMetadata()
+                && result.isSetName()
+                && result.isSetProperties());
     }
 
     @Test
@@ -924,6 +986,100 @@ public class EntityParserTest {
                 && !result.isSetName()
                 && !result.isSetEncodingType()
                 && !result.isSetMetadata());
+    }
+
+    @Test
+    public void readTask_Basic() throws IOException {
+        String json = "{\n"
+                + "    \"creationTime\": \"2015-04-13T00:00:00Z\",\n"
+                + "    \"taskingParameters\": {\"param1\": 1}"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("param1", 1);
+        Task expectedResult = new TaskBuilder()
+                .setCreationTime(TimeInstant.create(new DateTime(2015, 04, 13, 0, 0, 0, DateTimeZone.UTC).getMillis()))
+                .setTaskingParameters(parameters)
+                .build();
+        assertEquals(expectedResult, entityParser.parseTask(json));
+    }
+
+    @Test
+    public void readTask_WithLink() throws IOException {
+        String json = "{\n"
+                + "    \"creationTime\": \"2015-04-13T00:00:00Z\",\n"
+                + "    \"taskingParameters\": {\"param1\": 1},\n"
+                + "    \"TaskingCapability\": {\"@iot.id\": 2}"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("param1", 1);
+        Task expectedResult = new TaskBuilder()
+                .setCreationTime(TimeInstant.create(new DateTime(2015, 04, 13, 0, 0, 0, DateTimeZone.UTC).getMillis()))
+                .setTaskingParameters(parameters)
+                .setTaskingCapability(new TaskingCapabilityBuilder().setId(new IdLong(2)).build())
+                .build();
+        assertEquals(expectedResult, entityParser.parseTask(json));
+    }
+
+    @Test
+    public void readTaskingCapability_Basic() throws IOException {
+        String json = "{\n"
+                + "    \"name\": \"Tasking capability 1\",\n"
+                + "    \"description\": \"A capable capability\",\n"
+                + "    \"properties\": {\"prop1\": 1},\n"
+                + "    \"taskingParameters\": {\"parameter1\": 1}"
+                + "}";
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("prop1", 1);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("parameter1", 1);
+        TaskingCapability expectedResult = new TaskingCapabilityBuilder()
+                .setName("Tasking capability 1")
+                .setDescription("A capable capability")
+                .setProperties(properties)
+                .setTaskingParameters(parameters)
+                .build();
+        TaskingCapability result = entityParser.parseTaskingCapability(json);
+        assertEquals(expectedResult, result);
+        assert (result.isSetDescription()
+                && result.isSetName()
+                && result.isSetProperties()
+                && result.isSetTaskingParameters()
+                && !result.isSetActuator()
+                && !result.isSetThing());
+    }
+
+    @Test
+    public void readTaskingCapability_WithLinks() throws IOException {
+        String json = "{\n"
+                + "    \"name\": \"Tasking capability 1\",\n"
+                + "    \"description\": \"A capable capability\",\n"
+                + "    \"properties\": {\"prop1\": 1},\n"
+                + "    \"taskingParameters\": {\"parameter1\": 1},\n"
+                + "    \"Actuator\": {\"@iot.id\": 10},\n"
+                + "    \"Thing\": {\"@iot.id\": 11},\n"
+                + "    \"Tasks\": [{\"@iot.id\": 12}]"
+                + "}";
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("prop1", 1);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("parameter1", 1);
+        TaskingCapability expectedResult = new TaskingCapabilityBuilder()
+                .setName("Tasking capability 1")
+                .setDescription("A capable capability")
+                .setProperties(properties)
+                .setTaskingParameters(parameters)
+                .setActuator(new ActuatorBuilder().setId(new IdLong(10)).build())
+                .setThing(new ThingBuilder().setId(new IdLong(11)).build())
+                .addTask(new TaskBuilder().setId(new IdLong(12)).build())
+                .build();
+        TaskingCapability result = entityParser.parseTaskingCapability(json);
+        assertEquals(expectedResult, result);
+        assert (result.isSetDescription()
+                && result.isSetName()
+                && result.isSetProperties()
+                && result.isSetTaskingParameters()
+                && result.isSetActuator()
+                && result.isSetThing());
     }
 
     @Test

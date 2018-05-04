@@ -17,15 +17,19 @@
  */
 package de.fraunhofer.iosb.ilt.sta.serialize;
 
-import de.fraunhofer.iosb.ilt.sta.json.serialize.EntityFormatter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.fraunhofer.iosb.ilt.sta.formatter.DataArrayResult;
 import de.fraunhofer.iosb.ilt.sta.formatter.DataArrayValue;
+import de.fraunhofer.iosb.ilt.sta.json.serialize.EntityFormatter;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
+import de.fraunhofer.iosb.ilt.sta.model.builder.ActuatorBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.DatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.FeatureOfInterestBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.HistoricalLocationBuilder;
@@ -34,13 +38,15 @@ import de.fraunhofer.iosb.ilt.sta.model.builder.MultiDatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ObservationBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ObservedPropertyBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.SensorBuilder;
+import de.fraunhofer.iosb.ilt.sta.model.builder.TaskBuilder;
+import de.fraunhofer.iosb.ilt.sta.model.builder.TaskingCapabilityBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ThingBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.UnitOfMeasurementBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySetImpl;
-import de.fraunhofer.iosb.ilt.sta.model.ext.TimeInstant;
 import de.fraunhofer.iosb.ilt.sta.model.core.IdLong;
+import de.fraunhofer.iosb.ilt.sta.model.ext.TimeInstant;
 import de.fraunhofer.iosb.ilt.sta.path.EntityProperty;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 import de.fraunhofer.iosb.ilt.sta.path.Property;
@@ -49,11 +55,15 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +84,88 @@ public class EntityFormatterTest {
 
     @After
     public void tearDown() {
+    }
+
+    @Test
+    public void writeActuator_Basic() throws IOException {
+        String expResult = "{\n"
+                + "    \"@iot.id\": 1,\n"
+                + "    \"@iot.selfLink\": \"http://example.org/v1.0/Actuators(1)\",\n"
+                + "    \"TaskingCapabilities@iot.navigationLink\": \"Actuators(1)/TaskingCapabilities\",\n"
+                + "    \"name\": \"Actuator 2000\",\n"
+                + "    \"description\": \"An Active Actuator\",\n"
+                + "    \"encodingType\": \"http://schema.org/description\",\n"
+                + "    \"metadata\": \"Calibration date:  Jan 1, 2014\",\n"
+                + "    \"properties\": {\"prop1\": 1}"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("prop1", 1);
+        Actuator entity = new ActuatorBuilder()
+                .setId(new IdLong(1))
+                .setSelfLink("http://example.org/v1.0/Actuators(1)")
+                .setTaskingCapabilities(new EntitySetImpl<>(EntityType.TaskingCapability, "Actuators(1)/TaskingCapabilities"))
+                .setName("Actuator 2000")
+                .setDescription("An Active Actuator")
+                .setEncodingType("http://schema.org/description")
+                .setMetadata("Calibration date:  Jan 1, 2014")
+                .setProperties(parameters)
+                .build();
+
+        Assert.assertTrue(jsonEqual(expResult, new EntityFormatter().writeEntity(entity)));
+    }
+
+    @Test
+    public void writeTask_Basic() throws IOException {
+        String expResult = "{\n"
+                + "    \"@iot.id\": 1,\n"
+                + "    \"@iot.selfLink\": \"http://example.org/v1.0/Tasks(1)\",\n"
+                + "    \"TaskingCapability@iot.navigationLink\": \"Tasks(1)/TaskingCapability\",\n"
+                + "    \"creationTime\": \"2015-04-13T00:00:00.000Z\",\n"
+                + "    \"taskingParameters\": {\"param1\": 1}"
+                + "}";
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("param1", 1);
+        Task entity = new TaskBuilder()
+                .setId(new IdLong(1))
+                .setSelfLink("http://example.org/v1.0/Tasks(1)")
+                .setTaskingCapability(new TaskingCapabilityBuilder().setNavigationLink("Tasks(1)/TaskingCapability").build())
+                .setCreationTime(TimeInstant.create(new DateTime(2015, 04, 13, 0, 0, 0, DateTimeZone.UTC).getMillis()))
+                .setTaskingParameters(parameters)
+                .build();
+
+        Assert.assertTrue(jsonEqual(expResult, new EntityFormatter().writeEntity(entity)));
+    }
+
+    @Test
+    public void writeTaskingCapability_Basic() throws IOException {
+        String expResult = "{\n"
+                + "    \"@iot.id\": 1,\n"
+                + "    \"@iot.selfLink\": \"http://example.org/v1.0/TaskingCapabilities(1)\",\n"
+                + "    \"Thing@iot.navigationLink\": \"TaskingCapabilities(1)/Thing\",\n"
+                + "    \"Actuator@iot.navigationLink\": \"TaskingCapabilities(1)/Actuator\",\n"
+                + "    \"Tasks@iot.navigationLink\": \"TaskingCapabilities(1)/Tasks\",\n"
+                + "    \"name\": \"Tasking capability 1\",\n"
+                + "    \"description\": \"A capable capability\",\n"
+                + "    \"properties\": {\"prop1\": 1},\n"
+                + "    \"taskingParameters\": {\"parameter1\": 1}"
+                + "}";
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("prop1", 1);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("parameter1", 1);
+        TaskingCapability entity = new TaskingCapabilityBuilder()
+                .setId(new IdLong(1))
+                .setSelfLink("http://example.org/v1.0/TaskingCapabilities(1)")
+                .setThing(new ThingBuilder().setNavigationLink("TaskingCapabilities(1)/Thing").build())
+                .setActuator(new ActuatorBuilder().setNavigationLink("TaskingCapabilities(1)/Actuator").build())
+                .setTasks(new EntitySetImpl(EntityType.Task, "TaskingCapabilities(1)/Tasks"))
+                .setName("Tasking capability 1")
+                .setDescription("A capable capability")
+                .setProperties(properties)
+                .setTaskingParameters(parameters)
+                .build();
+
+        Assert.assertTrue(jsonEqual(expResult, new EntityFormatter().writeEntity(entity)));
     }
 
     @Test
@@ -404,7 +496,7 @@ public class EntityFormatterTest {
                 = "{\n"
                 + "	\"@iot.id\": 1,\n"
                 + "	\"@iot.selfLink\": \"http://example.org/v1.0/Datastreams(1)\",\n"
-                + "	\"Thing@iot.navigationLink\": \"HistoricalLocations(1)/Thing\",\n"
+                + "	\"Thing@iot.navigationLink\": \"Datastreams(1)/Thing\",\n"
                 + "	\"Sensor@iot.navigationLink\": \"Datastreams(1)/Sensor\",\n"
                 + "	\"ObservedProperty@iot.navigationLink\": \"Datastreams(1)/ObservedProperty\",\n"
                 + "	\"Observations@iot.navigationLink\": \"Datastreams(1)/Observations\",\n"
@@ -423,7 +515,7 @@ public class EntityFormatterTest {
         Entity entity = new DatastreamBuilder()
                 .setId(new IdLong(1))
                 .setSelfLink("http://example.org/v1.0/Datastreams(1)")
-                .setThing(new ThingBuilder().setNavigationLink("HistoricalLocations(1)/Thing").build())
+                .setThing(new ThingBuilder().setNavigationLink("Datastreams(1)/Thing").build())
                 .setSensor(new SensorBuilder().setNavigationLink("Datastreams(1)/Sensor").build())
                 .setObservedProperty(new ObservedPropertyBuilder().setNavigationLink("Datastreams(1)/ObservedProperty").build())
                 .setObservations(new EntitySetImpl(EntityType.Observation, "Datastreams(1)/Observations"))

@@ -302,4 +302,44 @@ public class DumpVisitor implements ParserVisitor {
         return defltAction(node, data);
     }
 
+    @Override
+    public ResourcePath visit(ASTeActuator node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTcActuators node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTeTask node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTcTasks node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTeTaskingCapability node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTcTaskingCapabilities node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTpCreationTime node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTpTaskingParameters node, ResourcePath data) {
+        return defltAction(node, data);
+    }
+
 }

@@ -17,6 +17,7 @@
  */
 package de.fraunhofer.iosb.ilt.sta.model;
 
+import de.fraunhofer.iosb.ilt.sta.model.builder.ActuatorBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ThingBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.core.AbstractEntity;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
@@ -37,57 +38,59 @@ import org.slf4j.LoggerFactory;
  *
  * @author jab
  */
-public class Location extends AbstractEntity {
+public class TaskingCapability extends AbstractEntity {
 
     /**
      * The logger for this class.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(Location.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskingCapability.class);
     private String name;
     private String description;
-    private String encodingType;
-    private Object location;
     private Map<String, Object> properties;
-    private EntitySet<HistoricalLocation> historicalLocations; // 0..*
-    private EntitySet<Thing> things;
+    private Map<String, Object> taskingParameters;
+
+    private Actuator actuator;
+    private Thing thing;
+    private EntitySet<Task> tasks;
 
     private boolean setName;
     private boolean setDescription;
-    private boolean setEncodingType;
-    private boolean setLocation;
     private boolean setProperties;
+    private boolean setTaskingParameters;
+    private boolean setActuator;
+    private boolean setThing;
 
-    public Location() {
-        this.things = new EntitySetImpl<>(EntityType.Thing);
-        this.historicalLocations = new EntitySetImpl<>(EntityType.HistoricalLocation);
+    public TaskingCapability() {
+        this.tasks = new EntitySetImpl<>(EntityType.Task);
     }
 
-    public Location(
-            Id id,
+    public TaskingCapability(Id id,
             String selfLink,
             String navigationLink,
             String name,
             String description,
-            String encodingType,
-            Object location,
             Map<String, Object> properties,
-            EntitySet<HistoricalLocation> historicalLocations,
-            EntitySet<Thing> things) {
+            Map<String, Object> taskingParameters,
+            Actuator actuator,
+            Thing thing,
+            EntitySet<Task> tasks) {
         super(id, selfLink, navigationLink);
         this.name = name;
         this.description = description;
-        this.encodingType = encodingType;
-        this.location = location;
-        this.historicalLocations = historicalLocations;
-        this.things = things;
         if (properties != null && !properties.isEmpty()) {
             this.properties = new HashMap<>(properties);
         }
+        if (taskingParameters != null && !taskingParameters.isEmpty()) {
+            this.taskingParameters = taskingParameters;
+        }
+        this.actuator = actuator;
+        this.thing = thing;
+        this.tasks = tasks;
     }
 
     @Override
     public EntityType getEntityType() {
-        return EntityType.Location;
+        return EntityType.TaskingCapability;
     }
 
     @Override
@@ -98,76 +101,56 @@ public class Location extends AbstractEntity {
             Id parentId = parentEntity.getId();
             if (parentId != null) {
                 switch (parentEntity.getEntityType()) {
+                    case Actuator:
+                        setActuator(new ActuatorBuilder().setId(parentId).build());
+                        LOGGER.debug("Set actuatorId to {}.", parentId);
+                        break;
+
                     case Thing:
-                        getThings().add(new ThingBuilder().setId(parentId).build());
-                        LOGGER.debug("Added thingId to {}.", parentId);
+                        setThing(new ThingBuilder().setId(parentId).build());
+                        LOGGER.debug("Set thingId to {}.", parentId);
                         break;
                 }
             }
         }
+
         super.complete(containingSet);
     }
 
     @Override
     public void setEntityPropertiesSet() {
-        setName = true;
         setDescription = true;
-        setEncodingType = true;
-        setLocation = true;
+        setName = true;
         setProperties = true;
-    }
-
-    public String getName() {
-        return name;
+        setTaskingParameters = true;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public String getEncodingType() {
-        return encodingType;
-    }
-
-    public Object getLocation() {
-        return location;
+    public String getName() {
+        return name;
     }
 
     public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public EntitySet<HistoricalLocation> getHistoricalLocations() {
-        return historicalLocations;
+    public Map<String, Object> getTaskingParameters() {
+        return taskingParameters;
     }
 
-    public EntitySet<Thing> getThings() {
-        return things;
+    public Actuator getActuator() {
+        return actuator;
     }
 
-    public boolean isSetName() {
-        return setName;
+    public Thing getThing() {
+        return thing;
     }
 
-    public boolean isSetDescription() {
-        return setDescription;
-    }
-
-    public boolean isSetEncodingType() {
-        return setEncodingType;
-    }
-
-    public boolean isSetLocation() {
-        return setLocation;
-    }
-
-    public boolean isSetProperties() {
-        return setProperties;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-        setName = true;
+    public EntitySet<Task> getTasks() {
+        return tasks;
     }
 
     public void setDescription(String description) {
@@ -175,22 +158,9 @@ public class Location extends AbstractEntity {
         setDescription = true;
     }
 
-    public void setEncodingType(String encodingType) {
-        this.encodingType = encodingType;
-        setEncodingType = true;
-    }
-
-    public void setLocation(Object location) {
-        this.location = location;
-        setLocation = true;
-    }
-
-    public void setHistoricalLocations(EntitySet<HistoricalLocation> historicalLocations) {
-        this.historicalLocations = historicalLocations;
-    }
-
-    public void setThings(EntitySet<Thing> things) {
-        this.things = things;
+    public void setName(String name) {
+        this.name = name;
+        setName = true;
     }
 
     public void setProperties(Map<String, Object> properties) {
@@ -201,16 +171,38 @@ public class Location extends AbstractEntity {
         setProperties = true;
     }
 
+    public void setTaskingParameters(Map<String, Object> taskingParameters) {
+        this.taskingParameters = taskingParameters;
+        setTaskingParameters = true;
+    }
+
+    public void setActuator(Actuator actuator) {
+        this.actuator = actuator;
+        setActuator = true;
+    }
+
+    /**
+     * @param thing the thing to set
+     */
+    public void setThing(Thing thing) {
+        this.thing = thing;
+        setThing = true;
+    }
+
+    public void setTasks(EntitySet<Task> tasks) {
+        this.tasks = tasks;
+    }
+
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 53 * hash + Objects.hashCode(this.name);
-        hash = 53 * hash + Objects.hashCode(this.description);
-        hash = 53 * hash + Objects.hashCode(this.encodingType);
-        hash = 53 * hash + Objects.hashCode(this.location);
-        hash = 53 * hash + Objects.hashCode(this.historicalLocations);
-        hash = 53 * hash + Objects.hashCode(this.properties);
-        hash = 53 * hash + Objects.hashCode(this.things);
+        int hash = 5;
+        hash = 59 * hash + Objects.hashCode(this.name);
+        hash = 59 * hash + Objects.hashCode(this.description);
+        hash = 59 * hash + Objects.hashCode(this.properties);
+        hash = 59 * hash + Objects.hashCode(this.taskingParameters);
+        hash = 59 * hash + Objects.hashCode(this.actuator);
+        hash = 59 * hash + Objects.hashCode(this.thing);
+        hash = 59 * hash + Objects.hashCode(this.tasks);
         return hash;
     }
 
@@ -225,31 +217,53 @@ public class Location extends AbstractEntity {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Location other = (Location) obj;
-        if (!super.equals(other)) {
-            return false;
-        }
+        final TaskingCapability other = (TaskingCapability) obj;
         if (!Objects.equals(this.name, other.name)) {
             return false;
         }
         if (!Objects.equals(this.description, other.description)) {
             return false;
         }
-        if (!Objects.equals(this.encodingType, other.encodingType)) {
-            return false;
-        }
-        if (!Objects.equals(this.location, other.location)) {
-            return false;
-        }
-        if (!Objects.equals(this.historicalLocations, other.historicalLocations)) {
-            return false;
-        }
-        if (!Objects.equals(this.things, other.things)) {
-            return false;
-        }
         if (!Objects.equals(this.properties, other.properties)) {
+            return false;
+        }
+        if (!Objects.equals(this.taskingParameters, other.taskingParameters)) {
+            return false;
+        }
+        if (!Objects.equals(this.actuator, other.actuator)) {
+            return false;
+        }
+        if (!Objects.equals(this.thing, other.thing)) {
+            return false;
+        }
+        if (!Objects.equals(this.tasks, other.tasks)) {
             return false;
         }
         return true;
     }
+
+    public boolean isSetName() {
+        return setName;
+    }
+
+    public boolean isSetDescription() {
+        return setDescription;
+    }
+
+    public boolean isSetProperties() {
+        return setProperties;
+    }
+
+    public boolean isSetTaskingParameters() {
+        return setTaskingParameters;
+    }
+
+    public boolean isSetActuator() {
+        return setActuator;
+    }
+
+    public boolean isSetThing() {
+        return setThing;
+    }
+
 }

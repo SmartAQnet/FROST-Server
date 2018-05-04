@@ -26,22 +26,7 @@ import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.CustomDeserializationM
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.CustomEntityChangedMessageDeserializer;
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.CustomEntityDeserializer;
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.GeoJsonDeserializier;
-import de.fraunhofer.iosb.ilt.sta.json.serialize.EntitySetCamelCaseNamingStrategy;
-import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
-import de.fraunhofer.iosb.ilt.sta.model.Datastream;
-import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
-import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
-import de.fraunhofer.iosb.ilt.sta.model.Location;
-import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
-import de.fraunhofer.iosb.ilt.sta.model.Observation;
-import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
-import de.fraunhofer.iosb.ilt.sta.model.Sensor;
-import de.fraunhofer.iosb.ilt.sta.model.Thing;
-import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
-import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
-import de.fraunhofer.iosb.ilt.sta.model.core.EntitySetImpl;
-import de.fraunhofer.iosb.ilt.sta.model.core.Id;
-import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.ActuatorMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.DatastreamMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.FeatureOfInterestMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.HistoricalLocationMixIn;
@@ -50,8 +35,29 @@ import de.fraunhofer.iosb.ilt.sta.json.mixin.MultiDatastreamMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ObservationMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ObservedPropertyMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.SensorMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.TaskMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.mixin.TaskingCapabilityMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.ThingMixIn;
 import de.fraunhofer.iosb.ilt.sta.json.mixin.UnitOfMeasurementMixIn;
+import de.fraunhofer.iosb.ilt.sta.json.serialize.EntitySetCamelCaseNamingStrategy;
+import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
+import de.fraunhofer.iosb.ilt.sta.model.Datastream;
+import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
+import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
+import de.fraunhofer.iosb.ilt.sta.model.Location;
+import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
+import de.fraunhofer.iosb.ilt.sta.model.Observation;
+import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
+import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
+import de.fraunhofer.iosb.ilt.sta.model.Thing;
+import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
+import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
+import de.fraunhofer.iosb.ilt.sta.model.core.EntitySetImpl;
+import de.fraunhofer.iosb.ilt.sta.model.core.Id;
+import de.fraunhofer.iosb.ilt.sta.model.ext.UnitOfMeasurement;
 import java.io.IOException;
 import java.util.List;
 
@@ -82,6 +88,7 @@ public class EntityParser {
                 .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
         //mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         mapper.setPropertyNamingStrategy(new EntitySetCamelCaseNamingStrategy());
+        mapper.addMixIn(Actuator.class, ActuatorMixIn.class);
         mapper.addMixIn(Datastream.class, DatastreamMixIn.class);
         mapper.addMixIn(MultiDatastream.class, MultiDatastreamMixIn.class);
         mapper.addMixIn(FeatureOfInterest.class, FeatureOfInterestMixIn.class);
@@ -90,6 +97,8 @@ public class EntityParser {
         mapper.addMixIn(Observation.class, ObservationMixIn.class);
         mapper.addMixIn(ObservedProperty.class, ObservedPropertyMixIn.class);
         mapper.addMixIn(Sensor.class, SensorMixIn.class);
+        mapper.addMixIn(Task.class, TaskMixIn.class);
+        mapper.addMixIn(TaskingCapability.class, TaskingCapabilityMixIn.class);
         mapper.addMixIn(Thing.class, ThingMixIn.class);
         mapper.addMixIn(UnitOfMeasurement.class, UnitOfMeasurementMixIn.class);
         SimpleModule module = new SimpleModule();
@@ -100,6 +109,10 @@ public class EntityParser {
         module.addDeserializer(Sensor.class, new CustomEntityDeserializer(Sensor.class));
         module.addDeserializer(EntityChangedMessage.class, new CustomEntityChangedMessageDeserializer());
         mapper.registerModule(module);
+    }
+
+    public Actuator parseActuator(String value) throws IOException {
+        return mapper.readValue(value, Actuator.class);
     }
 
     public Datastream parseDatastream(String value) throws IOException {
@@ -136,6 +149,14 @@ public class EntityParser {
 
     public Sensor parseSensor(String value) throws IOException {
         return mapper.readValue(value, Sensor.class);
+    }
+
+    public Task parseTask(String value) throws IOException {
+        return mapper.readValue(value, Task.class);
+    }
+
+    public TaskingCapability parseTaskingCapability(String value) throws IOException {
+        return mapper.readValue(value, TaskingCapability.class);
     }
 
     public Thing parseThing(String value) throws IOException {

@@ -17,6 +17,7 @@
  */
 package de.fraunhofer.iosb.ilt.sta.path;
 
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
@@ -25,6 +26,8 @@ import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import java.util.HashMap;
@@ -38,6 +41,7 @@ import java.util.Set;
  */
 public enum EntityType {
 
+    Actuator("Actuators", Actuator.class),
     Datastream("Datastreams", Datastream.class),
     MultiDatastream("MultiDatastreams", MultiDatastream.class),
     FeatureOfInterest("FeaturesOfInterest", FeatureOfInterest.class),
@@ -46,6 +50,8 @@ public enum EntityType {
     Observation("Observations", Observation.class),
     ObservedProperty("ObservedProperties", ObservedProperty.class),
     Sensor("Sensors", Sensor.class),
+    Task("Tasks", Task.class),
+    TaskingCapability("TaskingCapabilities", TaskingCapability.class),
     Thing("Things", Thing.class);
 
     public static class PropertyEntry {
@@ -87,6 +93,16 @@ public enum EntityType {
 
     private static void init() {
         Map<Property, Boolean> propertyMap;
+        propertyMap = Actuator.propertyMap;
+        propertyMap.put(EntityProperty.Id, false);
+        propertyMap.put(EntityProperty.SelfLink, false);
+        propertyMap.put(EntityProperty.Name, true);
+        propertyMap.put(EntityProperty.Description, true);
+        propertyMap.put(EntityProperty.EncodingType, true);
+        propertyMap.put(EntityProperty.Metadata, true);
+        propertyMap.put(EntityProperty.Properties, false);
+        propertyMap.put(NavigationProperty.TaskingCapabilities, false);
+
         propertyMap = Datastream.propertyMap;
         propertyMap.put(EntityProperty.Id, false);
         propertyMap.put(EntityProperty.SelfLink, false);
@@ -184,6 +200,24 @@ public enum EntityType {
         propertyMap.put(NavigationProperty.Datastreams, false);
         propertyMap.put(NavigationProperty.MultiDatastreams, false);
 
+        propertyMap = Task.propertyMap;
+        propertyMap.put(EntityProperty.Id, false);
+        propertyMap.put(EntityProperty.SelfLink, false);
+        propertyMap.put(EntityProperty.CreationTime, true);
+        propertyMap.put(EntityProperty.TaskingParameters, true);
+        propertyMap.put(NavigationProperty.TaskingCapability, true);
+
+        propertyMap = TaskingCapability.propertyMap;
+        propertyMap.put(EntityProperty.Id, false);
+        propertyMap.put(EntityProperty.SelfLink, false);
+        propertyMap.put(EntityProperty.Name, true);
+        propertyMap.put(EntityProperty.Description, true);
+        propertyMap.put(EntityProperty.Properties, false);
+        propertyMap.put(EntityProperty.TaskingParameters, true);
+        propertyMap.put(NavigationProperty.Actuator, true);
+        propertyMap.put(NavigationProperty.Tasks, false);
+        propertyMap.put(NavigationProperty.Thing, true);
+
         propertyMap = Thing.propertyMap;
         propertyMap.put(EntityProperty.Id, false);
         propertyMap.put(EntityProperty.SelfLink, false);
@@ -194,6 +228,7 @@ public enum EntityType {
         propertyMap.put(NavigationProperty.HistoricalLocations, false);
         propertyMap.put(NavigationProperty.Datastreams, false);
         propertyMap.put(NavigationProperty.MultiDatastreams, false);
+        propertyMap.put(NavigationProperty.TaskingCapabilities, false);
 
         for (EntityType type : EntityType.values()) {
             for (Property property : type.getPropertySet()) {

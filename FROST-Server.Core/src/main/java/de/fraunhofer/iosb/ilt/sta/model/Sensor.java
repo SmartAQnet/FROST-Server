@@ -133,6 +133,7 @@ public class Sensor extends AbstractEntity {
 
     @Override
     public void setEntityPropertiesSet() {
+        setName = true;
         setDescription = true;
         setEncodingType = true;
         setMetadata = true;

@@ -21,6 +21,7 @@ import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
 import de.fraunhofer.iosb.ilt.sta.model.Location;
 import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySetImpl;
@@ -42,6 +43,7 @@ public class ThingBuilder extends AbstractEntityBuilder<Thing, ThingBuilder> {
     private EntitySet<HistoricalLocation> historicalLocations;
     private EntitySet<Datastream> datastreams;
     private EntitySet<MultiDatastream> multiDatastreams;
+    private EntitySet<TaskingCapability> taskingCapabilities;
 
     public ThingBuilder() {
         properties = new HashMap<>();
@@ -49,6 +51,7 @@ public class ThingBuilder extends AbstractEntityBuilder<Thing, ThingBuilder> {
         historicalLocations = new EntitySetImpl<>(EntityType.HistoricalLocation);
         datastreams = new EntitySetImpl<>(EntityType.Datastream);
         multiDatastreams = new EntitySetImpl<>(EntityType.MultiDatastream);
+        taskingCapabilities = new EntitySetImpl<>(EntityType.TaskingCapability);
     }
 
     public ThingBuilder setName(String name) {
@@ -111,6 +114,16 @@ public class ThingBuilder extends AbstractEntityBuilder<Thing, ThingBuilder> {
         return this;
     }
 
+    public ThingBuilder setTaskingCapabilities(EntitySet<TaskingCapability> taskingCapabilities) {
+        this.taskingCapabilities = taskingCapabilities;
+        return this;
+    }
+
+    public ThingBuilder addTaskingCapability(TaskingCapability taskingCapability) {
+        this.taskingCapabilities.add(taskingCapability);
+        return this;
+    }
+
     @Override
     protected ThingBuilder getThis() {
         return this;
@@ -128,7 +141,8 @@ public class ThingBuilder extends AbstractEntityBuilder<Thing, ThingBuilder> {
                 locations,
                 historicalLocations,
                 datastreams,
-                multiDatastreams);
+                multiDatastreams,
+                taskingCapabilities);
         thing.setExportObject(isExportObject());
         return thing;
     }

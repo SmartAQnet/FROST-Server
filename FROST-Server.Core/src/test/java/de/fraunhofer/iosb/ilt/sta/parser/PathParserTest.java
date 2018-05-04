@@ -17,7 +17,6 @@
  */
 package de.fraunhofer.iosb.ilt.sta.parser;
 
-import de.fraunhofer.iosb.ilt.sta.model.core.Id;
 import de.fraunhofer.iosb.ilt.sta.model.core.IdLong;
 import de.fraunhofer.iosb.ilt.sta.model.core.IdString;
 import de.fraunhofer.iosb.ilt.sta.parser.path.PathParser;
@@ -33,6 +32,7 @@ import de.fraunhofer.iosb.ilt.sta.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.sta.persistence.IdManager;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -138,8 +138,7 @@ public class PathParserTest {
                     expResult.addPathElement(epe, true, true);
                     PropertyPathElement ppe = new PropertyPathElement(entityProperty, epe);
                     expResult.addPathElement(ppe, false, false);
-
-                    assert (result.equals(expResult));
+                    Assert.assertEquals(expResult, result);
                 }
             }
         }

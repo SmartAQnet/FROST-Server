@@ -27,6 +27,7 @@ import java.util.Collection;
  */
 public enum EntityProperty implements Property {
 
+    CreationTime,
     Description,
     Definition,
     EncodingType,
@@ -45,6 +46,7 @@ public enum EntityProperty implements Property {
     ResultTime,
     ResultQuality,
     SelfLink("@iot.selfLink", "@iot.selfLink"),
+    TaskingParameters(true),
     Time,
     UnitOfMeasurement(true),
     UnitOfMeasurements(true),

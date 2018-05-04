@@ -431,4 +431,53 @@ public class PathParser implements ParserVisitor {
         return defltAction(node, data);
     }
 
+    @Override
+    public ResourcePath visit(ASTeActuator node, ResourcePath data) {
+        addAsEntitiy(data, node, EntityType.Actuator);
+        return defltAction(node, data);
+
+    }
+
+    @Override
+    public ResourcePath visit(ASTcActuators node, ResourcePath data) {
+        addAsEntitiySet(data, EntityType.Actuator);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTeTask node, ResourcePath data) {
+        addAsEntitiy(data, node, EntityType.Task);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTcTasks node, ResourcePath data) {
+        addAsEntitiySet(data, EntityType.Task);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTeTaskingCapability node, ResourcePath data) {
+        addAsEntitiy(data, node, EntityType.TaskingCapability);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTcTaskingCapabilities node, ResourcePath data) {
+        addAsEntitiySet(data, EntityType.TaskingCapability);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTpCreationTime node, ResourcePath data) {
+        addAsEntitiyProperty(data, EntityProperty.CreationTime);
+        return defltAction(node, data);
+    }
+
+    @Override
+    public ResourcePath visit(ASTpTaskingParameters node, ResourcePath data) {
+        addAsEntitiyProperty(data, EntityProperty.TaskingParameters);
+        return defltAction(node, data);
+    }
+
 }

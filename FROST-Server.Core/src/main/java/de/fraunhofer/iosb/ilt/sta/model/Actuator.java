@@ -30,58 +30,58 @@ import java.util.Objects;
  *
  * @author jab
  */
-public class FeatureOfInterest extends AbstractEntity {
+public class Actuator extends AbstractEntity {
 
     private String name;
     private String description;
-    private String encodingType;
-    private Object feature;
     private Map<String, Object> properties;
-    private EntitySet<Observation> observations;
+    private String encodingType;
+    private Object metadata;
+
+    private EntitySet<TaskingCapability> taskingCapabilities;
 
     private boolean setName;
     private boolean setDescription;
-    private boolean setEncodingType;
-    private boolean setFeature;
     private boolean setProperties;
+    private boolean setEncodingType;
+    private boolean setMetadata;
 
-    public FeatureOfInterest() {
-        this.observations = new EntitySetImpl<>(EntityType.Observation);
+    public Actuator() {
+        taskingCapabilities = new EntitySetImpl<>(EntityType.TaskingCapability);
     }
 
-    public FeatureOfInterest(
-            Id id,
+    public Actuator(Id id,
             String selfLink,
             String navigationLink,
             String name,
             String description,
-            String encodingType,
-            Object feature,
             Map<String, Object> properties,
-            EntitySet<Observation> observations) {
+            String encodingType,
+            Object metadata,
+            EntitySet<TaskingCapability> taskingCapabilities) {
         super(id, selfLink, navigationLink);
         this.name = name;
         this.description = description;
-        this.encodingType = encodingType;
-        this.feature = feature;
-        this.observations = observations;
         if (properties != null && !properties.isEmpty()) {
             this.properties = new HashMap<>(properties);
         }
+        this.encodingType = encodingType;
+        this.metadata = metadata;
+        this.taskingCapabilities = taskingCapabilities;
     }
 
     @Override
     public EntityType getEntityType() {
-        return EntityType.FeatureOfInterest;
+        return EntityType.Actuator;
     }
 
     @Override
     public void setEntityPropertiesSet() {
         setName = true;
         setDescription = true;
-        setEncodingType = true;
-        setFeature = true;
         setProperties = true;
+        setEncodingType = true;
+        setMetadata = true;
     }
 
     public String getName() {
@@ -92,20 +92,20 @@ public class FeatureOfInterest extends AbstractEntity {
         return description;
     }
 
-    public String getEncodingType() {
-        return encodingType;
-    }
-
-    public Object getFeature() {
-        return feature;
-    }
-
     public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public EntitySet<Observation> getObservations() {
-        return observations;
+    public String getEncodingType() {
+        return encodingType;
+    }
+
+    public Object getMetadata() {
+        return metadata;
+    }
+
+    public EntitySet<TaskingCapability> getTaskingCapabilities() {
+        return taskingCapabilities;
     }
 
     public boolean isSetName() {
@@ -116,16 +116,16 @@ public class FeatureOfInterest extends AbstractEntity {
         return setDescription;
     }
 
+    public boolean isSetProperties() {
+        return setProperties;
+    }
+
     public boolean isSetEncodingType() {
         return setEncodingType;
     }
 
-    public boolean isSetFeature() {
-        return setFeature;
-    }
-
-    public boolean isSetProperties() {
-        return setProperties;
+    public boolean isSetMetadata() {
+        return setMetadata;
     }
 
     public void setName(String name) {
@@ -138,20 +138,6 @@ public class FeatureOfInterest extends AbstractEntity {
         setDescription = true;
     }
 
-    public void setEncodingType(String encodingType) {
-        this.encodingType = encodingType;
-        setEncodingType = true;
-    }
-
-    public void setFeature(Object feature) {
-        setFeature = true;
-        this.feature = feature;
-    }
-
-    public void setObservations(EntitySet<Observation> observations) {
-        this.observations = observations;
-    }
-
     public void setProperties(Map<String, Object> properties) {
         if (properties != null && properties.isEmpty()) {
             properties = null;
@@ -160,15 +146,29 @@ public class FeatureOfInterest extends AbstractEntity {
         setProperties = true;
     }
 
+    public void setEncodingType(String encodingType) {
+        this.encodingType = encodingType;
+        setEncodingType = true;
+    }
+
+    public void setMetadata(Object metadata) {
+        this.metadata = metadata;
+        setMetadata = true;
+    }
+
+    public void setTaskingCapabilities(EntitySet<TaskingCapability> taskingCapabilities) {
+        this.taskingCapabilities = taskingCapabilities;
+    }
+
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 41 * hash + Objects.hashCode(this.name);
-        hash = 41 * hash + Objects.hashCode(this.description);
-        hash = 41 * hash + Objects.hashCode(this.encodingType);
-        hash = 41 * hash + Objects.hashCode(this.feature);
-        hash = 41 * hash + Objects.hashCode(this.observations);
-        hash = 41 * hash + Objects.hashCode(this.properties);
+        hash = 23 * hash + Objects.hashCode(this.name);
+        hash = 23 * hash + Objects.hashCode(this.description);
+        hash = 23 * hash + Objects.hashCode(this.properties);
+        hash = 23 * hash + Objects.hashCode(this.encodingType);
+        hash = 23 * hash + Objects.hashCode(this.metadata);
+        hash = 23 * hash + Objects.hashCode(this.taskingCapabilities);
         return hash;
     }
 
@@ -183,10 +183,7 @@ public class FeatureOfInterest extends AbstractEntity {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final FeatureOfInterest other = (FeatureOfInterest) obj;
-        if (!super.equals(other)) {
-            return false;
-        }
+        final Actuator other = (Actuator) obj;
         if (!Objects.equals(this.name, other.name)) {
             return false;
         }
@@ -196,16 +193,15 @@ public class FeatureOfInterest extends AbstractEntity {
         if (!Objects.equals(this.encodingType, other.encodingType)) {
             return false;
         }
-        if (!Objects.equals(this.feature, other.feature)) {
-            return false;
-        }
-        if (!Objects.equals(this.observations, other.observations)) {
-            return false;
-        }
         if (!Objects.equals(this.properties, other.properties)) {
+            return false;
+        }
+        if (!Objects.equals(this.metadata, other.metadata)) {
+            return false;
+        }
+        if (!Objects.equals(this.taskingCapabilities, other.taskingCapabilities)) {
             return false;
         }
         return true;
     }
-
 }
