@@ -25,6 +25,7 @@ import com.querydsl.sql.SQLTemplates;
 import com.querydsl.sql.dml.SQLDeleteClause;
 import com.querydsl.sql.spatial.PostGISTemplates;
 import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
@@ -33,6 +34,8 @@ import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.model.core.Id;
@@ -179,6 +182,10 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
     public boolean doInsert(Entity entity) throws NoSuchEntityException, IncompleteEntityException {
         EntityInserter ei = new EntityInserter(this);
         switch (entity.getEntityType()) {
+            case Actuator:
+                ei.insertActuator((Actuator) entity);
+                break;
+
             case Datastream:
                 ei.insertDatastream((Datastream) entity);
                 break;
@@ -211,6 +218,14 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
                 ei.insertSensor((Sensor) entity);
                 break;
 
+            case Task:
+                ei.insertTask((Task) entity);
+                break;
+
+            case TaskingCapability:
+                ei.insertTaskingCapability((TaskingCapability) entity);
+                break;
+
             case Thing:
                 ei.insertThing((Thing) entity);
                 break;
@@ -229,6 +244,10 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
         SQLDeleteClause delete;
         EntityType type = pathElement.getEntityType();
         switch (type) {
+            case Actuator:
+                delete = qf.delete(QActuators.actuators).where(QActuators.actuators.id.eq(id));
+                break;
+
             case Datastream:
                 delete = qf.delete(QDatastreams.datastreams).where(QDatastreams.datastreams.id.eq(id));
                 break;
@@ -295,6 +314,14 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
                 delete = qf.delete(QSensors.sensors).where(QSensors.sensors.id.eq(id));
                 break;
 
+            case Task:
+                delete = qf.delete(QTasks.tasks).where(QTasks.tasks.id.eq(id));
+                break;
+
+            case TaskingCapability:
+                delete = qf.delete(QTaskingcapabilities.taskingcapabilities).where(QTaskingcapabilities.taskingcapabilities.id.eq(id));
+                break;
+
             case Thing:
                 delete = qf.delete(QThings.things).where(QThings.things.id.eq(id));
                 break;
@@ -323,6 +350,10 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
         EntityType type = pathElement.getEntityType();
         EntityChangedMessage message;
         switch (type) {
+            case Actuator:
+                message = ei.updateActuator((Actuator) entity, id);
+                break;
+
             case Datastream:
                 message = ei.updateDatastream((Datastream) entity, id);
                 break;
@@ -353,6 +384,14 @@ public class PostgresPersistenceManagerLong extends AbstractPersistenceManager i
 
             case Sensor:
                 message = ei.updateSensor((Sensor) entity, id);
+                break;
+
+            case Task:
+                message = ei.updateTask((Task) entity, id);
+                break;
+
+            case TaskingCapability:
+                message = ei.updateTaskingCapability((TaskingCapability) entity, id);
                 break;
 
             case Thing:

@@ -53,6 +53,14 @@ public class PropertyResolver {
     private static final Map<Class, List<ExpressionFactory>> ALL_FOR_CLASS = new HashMap<>();
 
     static {
+        addEntry(EntityProperty.Id, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.id);
+        addEntry(EntityProperty.SelfLink, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.id);
+        addEntry(EntityProperty.Name, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.name);
+        addEntry(EntityProperty.Description, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.description);
+        addEntry(EntityProperty.EncodingType, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.encodingType);
+        addEntry(EntityProperty.Metadata, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.metadata);
+        addEntry(EntityProperty.Properties, QActuators.class, (ExpressionFactory<QActuators>) (QActuators qPath) -> qPath.properties);
+
         addEntry(EntityProperty.Id, QDatastreams.class, (ExpressionFactory<QDatastreams>) (QDatastreams qPath) -> qPath.id);
         addEntry(EntityProperty.SelfLink, QDatastreams.class, (ExpressionFactory<QDatastreams>) (QDatastreams qPath) -> qPath.id);
         addEntry(EntityProperty.Name, QDatastreams.class, (ExpressionFactory<QDatastreams>) (QDatastreams qPath) -> qPath.name);
@@ -141,6 +149,21 @@ public class PropertyResolver {
         addEntry(EntityProperty.EncodingType, QSensors.class, (ExpressionFactory<QSensors>) (QSensors qPath) -> qPath.encodingType);
         addEntry(EntityProperty.Metadata, QSensors.class, (ExpressionFactory<QSensors>) (QSensors qPath) -> qPath.metadata);
         addEntry(EntityProperty.Properties, QSensors.class, (ExpressionFactory<QSensors>) (QSensors qPath) -> qPath.properties);
+
+        addEntry(EntityProperty.Id, QTasks.class, (ExpressionFactory<QTasks>) (QTasks qPath) -> qPath.id);
+        addEntry(EntityProperty.SelfLink, QTasks.class, (ExpressionFactory<QTasks>) (QTasks qPath) -> qPath.id);
+        addEntry(EntityProperty.TaskingParameters, QTasks.class, (ExpressionFactory<QTasks>) (QTasks qPath) -> qPath.taskingParameters);
+        addEntry(EntityProperty.CreationTime, QTasks.class, (ExpressionFactory<QTasks>) (QTasks qPath) -> qPath.creationTime);
+        addEntry(NavigationProperty.TaskingCapability, QTasks.class, (ExpressionFactory<QTasks>) (QTasks qPath) -> qPath.taskingcapabilityId);
+
+        addEntry(EntityProperty.Id, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.id);
+        addEntry(EntityProperty.SelfLink, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.id);
+        addEntry(EntityProperty.Name, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.name);
+        addEntry(EntityProperty.Description, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.description);
+        addEntry(EntityProperty.Properties, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.properties);
+        addEntry(EntityProperty.TaskingParameters, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.taskingParameters);
+        addEntry(NavigationProperty.Actuator, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.actuatorId);
+        addEntry(NavigationProperty.Thing, QTaskingcapabilities.class, (ExpressionFactory<QTaskingcapabilities>) (QTaskingcapabilities qPath) -> qPath.thingId);
 
         addEntry(EntityProperty.Id, QThings.class, (ExpressionFactory<QThings>) (QThings qPath) -> qPath.id);
         addEntry(EntityProperty.SelfLink, QThings.class, (ExpressionFactory<QThings>) (QThings qPath) -> qPath.id);

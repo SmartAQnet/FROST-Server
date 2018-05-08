@@ -165,7 +165,7 @@ void eActuatorId()#eActuator: {String i;}
 void childOfActuator() #void: {}
 {
   <PATH_SEPARATOR>
-  ( eTaskingCapability()
+  ( cTaskingCapabilities()
   | pId()
   | pSelfLink()
   | pMetadata()
@@ -443,8 +443,8 @@ void eTaskingCapabilityId()#eTaskingCapability: {String i;}
 void childOfTaskingCapability() #void: {}
 {
   <PATH_SEPARATOR>
-  ( eActuator()
-  | eTask()
+  ( cTasks()
+  | eActuator()
   | eThing()
   | pId()
   | pSelfLink()
@@ -521,6 +521,7 @@ void childOfThing() #void: {}
   | cMultiDatastreams()
   | cLocations()
   | cHistLocations()
+  | cTaskingCapabilities()
   | pId()
   | pSelfLink()
   | pName()

@@ -26,6 +26,7 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Path;
 import com.querydsl.core.types.dsl.NumberPath;
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.GeoJsonDeserializier;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
@@ -34,6 +35,8 @@ import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
@@ -142,6 +145,55 @@ public class PropertyHelper {
             }
         }
         return entitySet;
+    }
+
+    public static class ActuatorFactory implements PropertyHelper.entityFromTupleFactory<Actuator> {
+
+        public static final ActuatorFactory withDefaultAlias = new ActuatorFactory(new QActuators(PathSqlBuilderLong.ALIAS_PREFIX + "1"));
+        private final QActuators qInstance;
+
+        public ActuatorFactory(QActuators qInstance) {
+            this.qInstance = qInstance;
+        }
+
+        @Override
+        public Actuator create(Tuple tuple, Query query, DataSize dataSize) {
+            Set<Property> select = query == null ? Collections.emptySet() : query.getSelect();
+
+            Actuator entity = new Actuator();
+            entity.setName(tuple.get(qInstance.name));
+            entity.setDescription(tuple.get(qInstance.description));
+            entity.setEncodingType(tuple.get(qInstance.encodingType));
+
+            Long id = tuple.get(qInstance.id);
+            if (id != null) {
+                entity.setId(new IdLong(tuple.get(qInstance.id)));
+            }
+
+            if (select.isEmpty() || select.contains(EntityProperty.Metadata)) {
+                String metaDataString = tuple.get(qInstance.metadata);
+                dataSize.increase(metaDataString == null ? 0 : metaDataString.length());
+                entity.setMetadata(metaDataString);
+            }
+
+            if (select.isEmpty() || select.contains(EntityProperty.Properties)) {
+                String props = tuple.get(qInstance.properties);
+                entity.setProperties(jsonToObject(props, Map.class));
+            }
+
+            return entity;
+        }
+
+        @Override
+        public NumberPath<Long> getPrimaryKey() {
+            return qInstance.id;
+        }
+
+        @Override
+        public EntityType getEntityType() {
+            return EntityType.Actuator;
+        }
+
     }
 
     public static class DatastreamFactory implements PropertyHelper.entityFromTupleFactory<Datastream> {
@@ -281,6 +333,95 @@ public class PropertyHelper {
         @Override
         public EntityType getEntityType() {
             return EntityType.MultiDatastream;
+        }
+
+    }
+
+    public static class TaskFactory implements PropertyHelper.entityFromTupleFactory<Task> {
+
+        public static final TaskFactory withDefaultAlias = new TaskFactory(new QTasks(PathSqlBuilderLong.ALIAS_PREFIX + "1"));
+        private final QTasks qInstance;
+
+        public TaskFactory(QTasks qInstance) {
+            this.qInstance = qInstance;
+        }
+
+        @Override
+        public Task create(Tuple tuple, Query query, DataSize dataSize) {
+            Task entity = new Task();
+            Set<Property> select = query == null ? Collections.emptySet() : query.getSelect();
+
+            entity.setTaskingCapability(taskingCapabilityFromId(tuple.get(qInstance.taskingcapabilityId)));
+            Long id = tuple.get(qInstance.id);
+            if (id != null) {
+                entity.setId(new IdLong(tuple.get(qInstance.id)));
+            }
+
+            if (select.isEmpty() || select.contains(EntityProperty.TaskingParameters)) {
+                String params = tuple.get(qInstance.taskingParameters);
+                dataSize.increase(params == null ? 0 : params.length());
+                entity.setTaskingParameters(jsonToObject(params, Map.class));
+            }
+            entity.setCreationTime(instantFromTime(tuple.get(qInstance.creationTime)));
+
+            return entity;
+        }
+
+        @Override
+        public NumberPath<Long> getPrimaryKey() {
+            return qInstance.id;
+        }
+
+        @Override
+        public EntityType getEntityType() {
+            return EntityType.Task;
+        }
+
+    }
+
+    public static class TaskingCapabilityFactory implements PropertyHelper.entityFromTupleFactory<TaskingCapability> {
+
+        public static final TaskingCapabilityFactory withDefaultAlias = new TaskingCapabilityFactory(new QTaskingcapabilities(PathSqlBuilderLong.ALIAS_PREFIX + "1"));
+        private final QTaskingcapabilities qInstance;
+
+        public TaskingCapabilityFactory(QTaskingcapabilities qInstance) {
+            this.qInstance = qInstance;
+        }
+
+        @Override
+        public TaskingCapability create(Tuple tuple, Query query, DataSize dataSize) {
+            Set<Property> select = query == null ? Collections.emptySet() : query.getSelect();
+
+            TaskingCapability entity = new TaskingCapability();
+            entity.setName(tuple.get(qInstance.name));
+            entity.setDescription(tuple.get(qInstance.description));
+            Long id = tuple.get(qInstance.id);
+            if (id != null) {
+                entity.setId(new IdLong(tuple.get(qInstance.id)));
+            }
+            if (select.isEmpty() || select.contains(EntityProperty.Properties)) {
+                String props = tuple.get(qInstance.properties);
+                entity.setProperties(jsonToObject(props, Map.class));
+            }
+            if (select.isEmpty() || select.contains(EntityProperty.TaskingParameters)) {
+                String taskingParams = tuple.get(qInstance.taskingParameters);
+                entity.setTaskingParameters(jsonToObject(taskingParams, Map.class));
+            }
+
+            entity.setActuator(actuatorFromId(tuple.get(qInstance.actuatorId)));
+            entity.setThing(thingFromId(tuple.get(qInstance.thingId)));
+
+            return entity;
+        }
+
+        @Override
+        public NumberPath<Long> getPrimaryKey() {
+            return qInstance.id;
+        }
+
+        @Override
+        public EntityType getEntityType() {
+            return EntityType.TaskingCapability;
         }
 
     }
@@ -654,8 +795,11 @@ public class PropertyHelper {
     }
 
     static {
+        FACTORY_PER_ENTITY.put(Actuator.class, ActuatorFactory.withDefaultAlias);
         FACTORY_PER_ENTITY.put(Datastream.class, DatastreamFactory.withDefaultAlias);
         FACTORY_PER_ENTITY.put(MultiDatastream.class, MultiDatastreamFactory.withDefaultAlias);
+        FACTORY_PER_ENTITY.put(Task.class, TaskFactory.withDefaultAlias);
+        FACTORY_PER_ENTITY.put(TaskingCapability.class, TaskingCapabilityFactory.withDefaultAlias);
         FACTORY_PER_ENTITY.put(Thing.class, ThingFactory.withDefaultAlias);
         FACTORY_PER_ENTITY.put(FeatureOfInterest.class, FeatureOfInterestFactory.withDefaultAlias);
         FACTORY_PER_ENTITY.put(HistoricalLocation.class, HistoricalLocationFactory.withDefaultAlias);
@@ -709,6 +853,16 @@ public class PropertyHelper {
         return intervalFromTimes(timeStart, timeEnd);
     }
 
+    private static Actuator actuatorFromId(Long id) {
+        if (id == null) {
+            return null;
+        }
+        Actuator actuator = new Actuator();
+        actuator.setId(new IdLong(id));
+        actuator.setExportObject(false);
+        return actuator;
+    }
+
     private static Datastream datastreamFromId(Long id) {
         if (id == null) {
             return null;
@@ -757,6 +911,16 @@ public class PropertyHelper {
         sensor.setId(new IdLong(id));
         sensor.setExportObject(false);
         return sensor;
+    }
+
+    private static TaskingCapability taskingCapabilityFromId(Long id) {
+        if (id == null) {
+            return null;
+        }
+        TaskingCapability taskingCapability = new TaskingCapability();
+        taskingCapability.setId(new IdLong(id));
+        taskingCapability.setExportObject(false);
+        return taskingCapability;
     }
 
     private static Thing thingFromId(Long id) {

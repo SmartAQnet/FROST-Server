@@ -196,8 +196,36 @@
                     <jdbcUser>${builddatabase.username}</jdbcUser>
                     <jdbcPassword>${builddatabase.password}</jdbcPassword>
                     <tableNamePattern>
-                        LOCATIONS_HIST_LOCATIONS,HIST_LOCATIONS,THINGS_LOCATIONS,LOCATIONS,OBSERVATIONS,FEATURES,DATASTREAMS,MULTI_DATASTREAMS,OBS_PROPERTIES,SENSORS,THINGS,MULTI_DATASTREAMS_OBS_PROPERTIES,
-                        locations_hist_locations,hist_locations,things_locations,locations,observations,features,datastreams,multi_datastreams,obs_properties,sensors,things,multi_datastreams_obs_properties
+                        ACTUATORS,
+                        DATASTREAMS,
+                        FEATURES,
+                        HIST_LOCATIONS,
+                        LOCATIONS,
+                        LOCATIONS_HIST_LOCATIONS,
+                        MULTI_DATASTREAMS,
+                        MULTI_DATASTREAMS_OBS_PROPERTIES,
+                        OBS_PROPERTIES,
+                        OBSERVATIONS,
+                        SENSORS,
+                        TASKINGCAPABILITIES,
+                        TASKS,
+                        THINGS,
+                        THINGS_LOCATIONS,
+                        actuators,
+                        datastreams,
+                        features,
+                        hist_locations,
+                        locations,
+                        locations_hist_locations,
+                        multi_datastreams,
+                        multi_datastreams_obs_properties,
+                        obs_properties,
+                        observations,
+                        sensors,
+                        taskingcapabilities,
+                        tasks,
+                        things,
+                        things_locations
                     </tableNamePattern>
                     <packageName>de.fraunhofer.iosb.ilt.sta.persistence.postgres.longid</packageName>
                     <targetFolder>${project.basedir}/target/generated-sources/java</targetFolder>

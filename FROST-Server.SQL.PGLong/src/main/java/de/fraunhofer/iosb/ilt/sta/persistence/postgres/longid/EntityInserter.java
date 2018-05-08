@@ -33,6 +33,7 @@ import com.querydsl.sql.dml.SQLUpdateClause;
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.GeoJsonDeserializier;
 import de.fraunhofer.iosb.ilt.sta.json.serialize.GeoJsonSerializer;
 import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
+import de.fraunhofer.iosb.ilt.sta.model.Actuator;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
 import de.fraunhofer.iosb.ilt.sta.model.HistoricalLocation;
@@ -41,11 +42,15 @@ import de.fraunhofer.iosb.ilt.sta.model.MultiDatastream;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
+import de.fraunhofer.iosb.ilt.sta.model.Task;
+import de.fraunhofer.iosb.ilt.sta.model.TaskingCapability;
 import de.fraunhofer.iosb.ilt.sta.model.Thing;
+import de.fraunhofer.iosb.ilt.sta.model.builder.ActuatorBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.DatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.FeatureOfInterestBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.MultiDatastreamBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.SensorBuilder;
+import de.fraunhofer.iosb.ilt.sta.model.builder.TaskingCapabilityBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.builder.ThingBuilder;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.model.core.EntitySet;
@@ -94,6 +99,86 @@ public class EntityInserter {
 
     public EntityInserter(PostgresPersistenceManagerLong pm) {
         this.pm = pm;
+    }
+
+    public boolean insertActuator(Actuator actuator) throws NoSuchEntityException, IncompleteEntityException {
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QActuators qActuators = QActuators.actuators;
+
+        SQLInsertClause insert = qFactory.insert(qActuators);
+        insert.set(qActuators.name, actuator.getName());
+        insert.set(qActuators.description, actuator.getDescription());
+        insert.set(qActuators.encodingType, actuator.getEncodingType());
+        // TODO: Check metadata serialisation.
+        insert.set(qActuators.metadata, actuator.getMetadata().toString());
+        insert.set(qActuators.properties, objectToJson(actuator.getProperties()));
+
+        insertUserDefinedId(insert, qActuators.id, actuator);
+
+        Long generatedId = insert.executeWithKey(qActuators.id);
+        LOGGER.debug("Inserted Actuator. Created id = {}.", generatedId);
+        actuator.setId(new IdLong(generatedId));
+
+        // Create new taskingCapabilities, if any.
+        for (TaskingCapability taskingCapability : actuator.getTaskingCapabilities()) {
+            taskingCapability.setActuator(new ActuatorBuilder().setId(actuator.getId()).build());
+            taskingCapability.complete();
+            pm.insert(taskingCapability);
+        }
+
+        return true;
+    }
+
+    public EntityChangedMessage updateActuator(Actuator actuator, long actuatorId) throws NoSuchEntityException {
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QSensors qs = QSensors.sensors;
+        SQLUpdateClause update = qFactory.update(qs);
+        EntityChangedMessage message = new EntityChangedMessage();
+
+        addToUpdateEnsureNotNull(actuator.isSetName(), actuator.getName(), qs.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(actuator.isSetDescription(), actuator.getDescription(), qs.description, update, message, EntityProperty.Description);
+        addToUpdateEnsureNotNull(actuator.isSetEncodingType(), actuator.getEncodingType(), qs.encodingType, update, message, EntityProperty.EncodingType);
+        if (actuator.isSetMetadata()) {
+            if (actuator.getMetadata() == null) {
+                throw new IncompleteEntityException("metadata can not be null.");
+            }
+            // TODO: Check metadata serialisation.
+            update.set(qs.metadata, actuator.getMetadata().toString());
+            message.addField(EntityProperty.Metadata);
+        }
+        if (actuator.isSetProperties()) {
+            update.set(qs.properties, objectToJson(actuator.getProperties()));
+            message.addField(EntityProperty.Properties);
+        }
+
+        update.where(qs.id.eq(actuatorId));
+        long count = 0;
+        if (!update.isEmpty()) {
+            count = update.execute();
+        }
+        if (count > 1) {
+            LOGGER.error("Updating Actuator {} caused {} rows to change!", actuatorId, count);
+            throw new IllegalStateException("Update changed multiple rows.");
+        }
+
+        // Link existing taskingCapabilities to the Actuator.
+        for (TaskingCapability taskingCap : actuator.getTaskingCapabilities()) {
+            if (taskingCap.getId() == null || !entityExists(taskingCap)) {
+                throw new NoSuchEntityException("TaskingCapability with no id or non existing.");
+            }
+            Long taskingCapId = (Long) taskingCap.getId().getValue();
+            QTaskingcapabilities qTaskingCaps = QTaskingcapabilities.taskingcapabilities;
+            long dsCount = qFactory.update(qTaskingCaps)
+                    .set(qTaskingCaps.actuatorId, actuatorId)
+                    .where(qTaskingCaps.id.eq(taskingCapId))
+                    .execute();
+            if (dsCount > 0) {
+                LOGGER.debug("Assigned TaskingCapability {} to Actuator {}.", taskingCapId, actuatorId);
+            }
+        }
+
+        LOGGER.debug("Updated Actuator {}", actuatorId);
+        return message;
     }
 
     public boolean insertDatastream(Datastream ds) throws NoSuchEntityException, IncompleteEntityException {
@@ -150,27 +235,9 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qd);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (d.isSetName()) {
-            if (d.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qd.name, d.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (d.isSetDescription()) {
-            if (d.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qd.description, d.getDescription());
-            message.addField(EntityProperty.Description);
-        }
-        if (d.isSetObservationType()) {
-            if (d.getObservationType() == null) {
-                throw new IncompleteEntityException("observationType can not be null.");
-            }
-            update.set(qd.observationType, d.getObservationType());
-            message.addField(EntityProperty.ObservationType);
-        }
+        addToUpdateEnsureNotNull(d.isSetName(), d.getName(), qd.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(d.isSetDescription(), d.getDescription(), qd.description, update, message, EntityProperty.Description);
+        addToUpdateEnsureNotNull(d.isSetObservationType(), d.getObservationType(), qd.observationType, update, message, EntityProperty.ObservationType);
         if (d.isSetProperties()) {
             update.set(qd.properties, objectToJson(d.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -302,20 +369,8 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qd);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (d.isSetName()) {
-            if (d.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qd.name, d.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (d.isSetDescription()) {
-            if (d.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qd.description, d.getDescription());
-            message.addField(EntityProperty.Description);
-        }
+        addToUpdateEnsureNotNull(d.isSetName(), d.getName(), qd.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(d.isSetDescription(), d.getDescription(), qd.description, update, message, EntityProperty.Description);
         if (d.isSetProperties()) {
             update.set(qd.properties, objectToJson(d.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -447,20 +502,8 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qfoi);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (foi.isSetName()) {
-            if (foi.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qfoi.name, foi.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (foi.isSetDescription()) {
-            if (foi.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qfoi.description, foi.getDescription());
-            message.addField(EntityProperty.Description);
-        }
+        addToUpdateEnsureNotNull(foi.isSetName(), foi.getName(), qfoi.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(foi.isSetDescription(), foi.getDescription(), qfoi.description, update, message, EntityProperty.Description);
         if (foi.isSetProperties()) {
             update.set(qfoi.properties, objectToJson(foi.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -726,20 +769,8 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(ql);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (l.isSetName()) {
-            if (l.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(ql.name, l.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (l.isSetDescription()) {
-            if (l.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(ql.description, l.getDescription());
-            message.addField(EntityProperty.Description);
-        }
+        addToUpdateEnsureNotNull(l.isSetName(), l.getName(), ql.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(l.isSetDescription(), l.getDescription(), ql.description, update, message, EntityProperty.Description);
         if (l.isSetProperties()) {
             update.set(ql.properties, objectToJson(l.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -1091,27 +1122,9 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qop);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (op.isSetDefinition()) {
-            if (op.getDefinition() == null) {
-                throw new IncompleteEntityException("definition can not be null.");
-            }
-            update.set(qop.definition, op.getDefinition());
-            message.addField(EntityProperty.Definition);
-        }
-        if (op.isSetDescription()) {
-            if (op.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qop.description, op.getDescription());
-            message.addField(EntityProperty.Description);
-        }
-        if (op.isSetName()) {
-            if (op.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qop.name, op.getName());
-            message.addField(EntityProperty.Name);
-        }
+        addToUpdateEnsureNotNull(op.isSetDefinition(), op.getDefinition(), qop.definition, update, message, EntityProperty.Definition);
+        addToUpdateEnsureNotNull(op.isSetDescription(), op.getDescription(), qop.description, update, message, EntityProperty.Description);
+        addToUpdateEnsureNotNull(op.isSetName(), op.getName(), qop.name, update, message, EntityProperty.Name);
         if (op.isSetProperties()) {
             update.set(qop.properties, objectToJson(op.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -1191,27 +1204,9 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qs);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (s.isSetName()) {
-            if (s.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qs.name, s.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (s.isSetDescription()) {
-            if (s.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qs.description, s.getDescription());
-            message.addField(EntityProperty.Description);
-        }
-        if (s.isSetEncodingType()) {
-            if (s.getEncodingType() == null) {
-                throw new IncompleteEntityException("encodingType can not be null.");
-            }
-            update.set(qs.encodingType, s.getEncodingType());
-            message.addField(EntityProperty.EncodingType);
-        }
+        addToUpdateEnsureNotNull(s.isSetName(), s.getName(), qs.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(s.isSetDescription(), s.getDescription(), qs.description, update, message, EntityProperty.Description);
+        addToUpdateEnsureNotNull(s.isSetEncodingType(), s.getEncodingType(), qs.encodingType, update, message, EntityProperty.EncodingType);
         if (s.isSetMetadata()) {
             if (s.getMetadata() == null) {
                 throw new IncompleteEntityException("metadata can not be null.");
@@ -1268,6 +1263,131 @@ public class EntityInserter {
         }
 
         LOGGER.debug("Updated Sensor {}", sensorId);
+        return message;
+    }
+
+    public boolean insertTask(Task task) throws NoSuchEntityException, IncompleteEntityException {
+        TaskingCapability taskingCap = task.getTaskingCapability();
+        entityExistsOrCreate(taskingCap);
+
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QTasks qTask = QTasks.tasks;
+        SQLInsertClause insert = qFactory.insert(qTask);
+
+        insert.set(qTask.taskingParameters, objectToJson(task.getTaskingParameters()));
+        insert.set(qTask.taskingcapabilityId, (Long) taskingCap.getId().getValue());
+        insertTimeInstant(insert, qTask.creationTime, TimeInstant.now());
+        insertUserDefinedId(insert, qTask.id, task);
+
+        Long generatedId = insert.executeWithKey(qTask.id);
+        LOGGER.debug("Inserted Task. Created id = {}.", generatedId);
+        task.setId(new IdLong(generatedId));
+        return true;
+    }
+
+    public EntityChangedMessage updateTask(Task task, long id) {
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QTasks qTasks = QTasks.tasks;
+        SQLUpdateClause update = qFactory.update(qTasks);
+        EntityChangedMessage message = new EntityChangedMessage();
+
+        if (task.isSetTaskingParameters()) {
+            update.set(qTasks.taskingParameters, objectToJson(task.getTaskingParameters()));
+            message.addField(EntityProperty.TaskingParameters);
+        }
+
+        update.where(qTasks.id.eq(id));
+        long count = 0;
+        if (!update.isEmpty()) {
+            count = update.execute();
+        }
+        if (count > 1) {
+            LOGGER.error("Updating Task {} caused {} rows to change!", id, count);
+            throw new IllegalStateException("Update changed multiple rows.");
+        }
+        LOGGER.debug("Updated Task {}", id);
+        return message;
+    }
+
+    public boolean insertTaskingCapability(TaskingCapability taskingCap) throws NoSuchEntityException, IncompleteEntityException {
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QTaskingcapabilities qTaskingCaps = QTaskingcapabilities.taskingcapabilities;
+
+        Actuator actuator = taskingCap.getActuator();
+        entityExistsOrCreate(actuator);
+        Thing thing = taskingCap.getThing();
+        entityExistsOrCreate(thing);
+
+        SQLInsertClause insert = qFactory.insert(qTaskingCaps);
+        insert.set(qTaskingCaps.name, taskingCap.getName());
+        insert.set(qTaskingCaps.description, taskingCap.getDescription());
+        insert.set(qTaskingCaps.properties, objectToJson(taskingCap.getProperties()));
+        // TODO: Validate
+        insert.set(qTaskingCaps.taskingParameters, objectToJson(taskingCap.getTaskingParameters()));
+
+        insert.set(qTaskingCaps.actuatorId, (Long) actuator.getId().getValue());
+        insert.set(qTaskingCaps.thingId, (Long) thing.getId().getValue());
+        insertUserDefinedId(insert, qTaskingCaps.id, taskingCap);
+
+        Long generatedId = insert.executeWithKey(qTaskingCaps.id);
+        LOGGER.debug("Inserted Actuator. Created id = {}.", generatedId);
+        taskingCap.setId(new IdLong(generatedId));
+
+        // Create new Tasks, if any.
+        for (Task task : taskingCap.getTasks()) {
+            task.setTaskingCapability(new TaskingCapabilityBuilder().setId(taskingCap.getId()).build());
+            task.complete();
+            pm.insert(task);
+        }
+
+        return true;
+    }
+
+    public EntityChangedMessage updateTaskingCapability(TaskingCapability taskingCap, long taskingCapId) throws NoSuchEntityException {
+        SQLQueryFactory qFactory = pm.createQueryFactory();
+        QTaskingcapabilities qTaskingCaps = QTaskingcapabilities.taskingcapabilities;
+        SQLUpdateClause update = qFactory.update(qTaskingCaps);
+        EntityChangedMessage message = new EntityChangedMessage();
+
+        addToUpdateEnsureNotNull(taskingCap.isSetName(), taskingCap.getName(), qTaskingCaps.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(taskingCap.isSetDescription(), taskingCap.getDescription(), qTaskingCaps.description, update, message, EntityProperty.Description);
+        if (taskingCap.isSetProperties()) {
+            update.set(qTaskingCaps.properties, objectToJson(taskingCap.getProperties()));
+            message.addField(EntityProperty.Properties);
+        }
+        if (taskingCap.isSetTaskingParameters()) {
+            // TODO: Validate. What to do with Tasks, if params change.
+            update.set(qTaskingCaps.taskingParameters, objectToJson(taskingCap.getTaskingParameters()));
+            message.addField(EntityProperty.TaskingParameters);
+        }
+
+        update.where(qTaskingCaps.id.eq(taskingCapId));
+        long count = 0;
+        if (!update.isEmpty()) {
+            count = update.execute();
+        }
+        if (count > 1) {
+            LOGGER.error("Updating Actuator {} caused {} rows to change!", taskingCapId, count);
+            throw new IllegalStateException("Update changed multiple rows.");
+        }
+
+        // Link existing Tasks to the TaskingCapability.
+        for (Task task : taskingCap.getTasks()) {
+            if (task.getId() == null || !entityExists(task)) {
+                throw new NoSuchEntityException("TaskingCapability with no id or non existing.");
+            }
+            Long taskId = (Long) task.getId().getValue();
+            QTasks qTask = QTasks.tasks;
+            long dsCount = qFactory.update(qTask)
+                    .set(qTask.taskingcapabilityId, taskingCapId)
+                    .where(qTask.id.eq(taskId))
+                    .execute();
+            if (dsCount > 0) {
+                LOGGER.debug("Assigned Task {} to TaskingCapability {}.", taskId, taskingCapId);
+            }
+        }
+
+        LOGGER.debug("Updated TaskingCapability {}", taskingCapId);
         return message;
     }
 
@@ -1346,20 +1466,8 @@ public class EntityInserter {
         SQLUpdateClause update = qFactory.update(qt);
         EntityChangedMessage message = new EntityChangedMessage();
 
-        if (t.isSetName()) {
-            if (t.getName() == null) {
-                throw new IncompleteEntityException("name can not be null.");
-            }
-            update.set(qt.name, t.getName());
-            message.addField(EntityProperty.Name);
-        }
-        if (t.isSetDescription()) {
-            if (t.getDescription() == null) {
-                throw new IncompleteEntityException("description can not be null.");
-            }
-            update.set(qt.description, t.getDescription());
-            message.addField(EntityProperty.Description);
-        }
+        addToUpdateEnsureNotNull(t.isSetName(), t.getName(), qt.name, update, message, EntityProperty.Name);
+        addToUpdateEnsureNotNull(t.isSetDescription(), t.getDescription(), qt.description, update, message, EntityProperty.Description);
         if (t.isSetProperties()) {
             update.set(qt.properties, objectToJson(t.getProperties()));
             message.addField(EntityProperty.Properties);
@@ -1458,6 +1566,16 @@ public class EntityInserter {
         if (idhandler.useClientSuppliedId()) {
             idhandler.modifyClientSuppliedId();
             clause.set(idPath, (Long) idhandler.getIdValue());
+        }
+    }
+
+    private static <T> void addToUpdateEnsureNotNull(boolean isSet, T value, Path<T> path, SQLUpdateClause update, EntityChangedMessage message, EntityProperty field) throws IncompleteEntityException {
+        if (isSet) {
+            if (value == null) {
+                throw new IncompleteEntityException(field.name + " can not be null.");
+            }
+            update.set(path, value);
+            message.addField(field);
         }
     }
 
@@ -1606,11 +1724,19 @@ public class EntityInserter {
         SQLQueryFactory qFactory = pm.createQueryFactory();
         long count = 0;
         switch (e.getEntityType()) {
-            case Datastream:
-                QDatastreams d = QDatastreams.datastreams;
+            case Actuator:
+                QActuators qActuators = QActuators.actuators;
                 count = qFactory.select()
-                        .from(d)
-                        .where(d.id.eq(id))
+                        .from(qActuators)
+                        .where(qActuators.id.eq(id))
+                        .fetchCount();
+                break;
+
+            case Datastream:
+                QDatastreams qDatastreams = QDatastreams.datastreams;
+                count = qFactory.select()
+                        .from(qDatastreams)
+                        .where(qDatastreams.id.eq(id))
                         .fetchCount();
                 break;
 
@@ -1667,6 +1793,22 @@ public class EntityInserter {
                 count = qFactory.select()
                         .from(s)
                         .where(s.id.eq(id))
+                        .fetchCount();
+                break;
+
+            case Task:
+                QTasks qTasks = QTasks.tasks;
+                count = qFactory.select()
+                        .from(qTasks)
+                        .where(qTasks.id.eq(id))
+                        .fetchCount();
+                break;
+
+            case TaskingCapability:
+                QTaskingcapabilities qTaskingCapabilities = QTaskingcapabilities.taskingcapabilities;
+                count = qFactory.select()
+                        .from(qTaskingCapabilities)
+                        .where(qTaskingCapabilities.id.eq(id))
                         .fetchCount();
                 break;
 

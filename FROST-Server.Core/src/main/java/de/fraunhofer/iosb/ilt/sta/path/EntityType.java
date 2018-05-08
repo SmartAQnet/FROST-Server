@@ -77,7 +77,8 @@ public enum EntityType {
      */
     public final String plural;
     /**
-     * The Set of Properties that Entities of this type have.
+     * The Set of Properties that Entities of this type have, with the flag if
+     * they are mandatory.
      */
     private final Map<Property, Boolean> propertyMap = new HashMap<>();
     /**
@@ -203,7 +204,7 @@ public enum EntityType {
         propertyMap = Task.propertyMap;
         propertyMap.put(EntityProperty.Id, false);
         propertyMap.put(EntityProperty.SelfLink, false);
-        propertyMap.put(EntityProperty.CreationTime, true);
+        propertyMap.put(EntityProperty.CreationTime, false);
         propertyMap.put(EntityProperty.TaskingParameters, true);
         propertyMap.put(NavigationProperty.TaskingCapability, true);
 

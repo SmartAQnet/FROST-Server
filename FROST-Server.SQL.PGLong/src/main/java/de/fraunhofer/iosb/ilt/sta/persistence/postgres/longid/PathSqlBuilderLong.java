@@ -208,6 +208,10 @@ public class PathSqlBuilderLong implements PathSqlBuilder {
         }
 
         switch (type) {
+            case Actuator:
+                queryActuators(id, last);
+                break;
+
             case Datastream:
                 queryDatastreams(id, last);
                 break;
@@ -239,6 +243,13 @@ public class PathSqlBuilderLong implements PathSqlBuilder {
             case Sensor:
                 querySensors(id, last);
                 break;
+            case Task:
+                queryTasks(id, last);
+                break;
+
+            case TaskingCapability:
+                queryTaskingCapabilities(id, last);
+                break;
 
             case Thing:
                 queryThings(id, last);
@@ -257,6 +268,40 @@ public class PathSqlBuilderLong implements PathSqlBuilder {
     @Override
     public Map<String, Expression<?>> expressionsForProperty(EntityProperty property, Path<?> qPath, Map<String, Expression<?>> target) {
         return PropertyResolver.expressionsForProperty(property, qPath, target);
+    }
+
+    private void queryActuators(Long entityId, TableRefLong last) {
+        int nr = ++aliasNr;
+        String alias = ALIAS_PREFIX + nr;
+        QActuators qActuators = new QActuators(alias);
+        boolean added = true;
+        if (last.type == null) {
+            sqlQuery.select(PropertyHelper.getExpressions(qActuators, selectedProperties));
+            sqlQuery.from(qActuators);
+        } else {
+            switch (last.type) {
+                case TaskingCapability:
+                    QTaskingcapabilities qTaskingCaps = (QTaskingcapabilities) last.qPath;
+                    sqlQuery.innerJoin(qActuators).on(qActuators.id.eq(qTaskingCaps.actuatorId));
+                    break;
+
+                case Actuator:
+                    added = false;
+                    break;
+
+                default:
+                    LOGGER.error("Do not know how to join {} onto Actuators.", last.type);
+                    throw new IllegalStateException("Do not know how to join");
+            }
+        }
+        if (added) {
+            last.type = EntityType.Actuator;
+            last.qPath = qActuators;
+            last.idPath = qActuators.id;
+        }
+        if (entityId != null) {
+            sqlQuery.where(qActuators.id.eq(entityId));
+        }
     }
 
     private void queryDatastreams(Long entityId, TableRefLong last) {
@@ -369,6 +414,84 @@ public class PathSqlBuilderLong implements PathSqlBuilder {
         }
     }
 
+    private void queryTasks(Long entityId, TableRefLong last) {
+        int nr = ++aliasNr;
+        String alias = ALIAS_PREFIX + nr;
+        QTasks qTasks = new QTasks(alias);
+        boolean added = true;
+        if (last.type == null) {
+            sqlQuery.select(PropertyHelper.getExpressions(qTasks, selectedProperties));
+            sqlQuery.from(qTasks);
+        } else {
+            switch (last.type) {
+                case TaskingCapability:
+                    QTaskingcapabilities qTaskingCaps = (QTaskingcapabilities) last.qPath;
+                    sqlQuery.innerJoin(qTasks).on(qTasks.taskingcapabilityId.eq(qTaskingCaps.id));
+                    break;
+
+                case Task:
+                    added = false;
+                    break;
+
+                default:
+                    LOGGER.error("Do not know how to join {} onto Tasks.", last.type);
+                    throw new IllegalStateException("Do not know how to join");
+            }
+        }
+        if (added) {
+            last.type = EntityType.Task;
+            last.qPath = qTasks;
+            last.idPath = qTasks.id;
+        }
+        if (entityId != null) {
+            sqlQuery.where(qTasks.id.eq(entityId));
+        }
+    }
+
+    private void queryTaskingCapabilities(Long entityId, TableRefLong last) {
+        int nr = ++aliasNr;
+        String alias = ALIAS_PREFIX + nr;
+        QTaskingcapabilities qTaskingCaps = new QTaskingcapabilities(alias);
+        boolean added = true;
+        if (last.type == null) {
+            sqlQuery.select(PropertyHelper.getExpressions(qTaskingCaps, selectedProperties));
+            sqlQuery.from(qTaskingCaps);
+        } else {
+            switch (last.type) {
+                case Actuator:
+                    QActuators qActuators = (QActuators) last.qPath;
+                    sqlQuery.innerJoin(qTaskingCaps).on(qTaskingCaps.actuatorId.eq(qActuators.id));
+                    break;
+
+                case Task:
+                    QTasks qTasks = (QTasks) last.qPath;
+                    sqlQuery.innerJoin(qTaskingCaps).on(qTaskingCaps.id.eq(qTasks.taskingcapabilityId));
+                    break;
+
+                case Thing:
+                    QThings qThings = (QThings) last.qPath;
+                    sqlQuery.innerJoin(qTaskingCaps).on(qTaskingCaps.thingId.eq(qThings.id));
+                    break;
+
+                case TaskingCapability:
+                    added = false;
+                    break;
+
+                default:
+                    LOGGER.error("Do not know how to join {} onto Tasks.", last.type);
+                    throw new IllegalStateException("Do not know how to join");
+            }
+        }
+        if (added) {
+            last.type = EntityType.TaskingCapability;
+            last.qPath = qTaskingCaps;
+            last.idPath = qTaskingCaps.id;
+        }
+        if (entityId != null) {
+            sqlQuery.where(qTaskingCaps.id.eq(entityId));
+        }
+    }
+
     private void queryThings(Long entityId, TableRefLong last) {
         int nr = ++aliasNr;
         String alias = ALIAS_PREFIX + nr;
@@ -400,6 +523,11 @@ public class PathSqlBuilderLong implements PathSqlBuilder {
                     sqlQuery.innerJoin(qTL).on(qLocations.id.eq(qTL.locationId));
                     sqlQuery.innerJoin(qThings).on(qThings.id.eq(qTL.thingId));
                     needsDistinct = true;
+                    break;
+
+                case TaskingCapability:
+                    QTaskingcapabilities qTaskingCapabilities = (QTaskingcapabilities) last.qPath;
+                    sqlQuery.innerJoin(qThings).on(qThings.id.eq(qTaskingCapabilities.thingId));
                     break;
 
                 case Thing:
