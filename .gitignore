@@ -17,6 +17,7 @@ release.properties
 /FROST-Server.SQL.PGUuid/target/
 /FROST-Server.MQTT/target/
 /FROST-Server.MQTTP/target/
+/SWE-Common/target/
 
 FROST-Server.HTTP/keycloak.json
 FROST-Server.MQTT/FrostMqtt.properties

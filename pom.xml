@@ -22,6 +22,7 @@
         <module>FROST-Server.SQL.PGLong</module>
         <module>FROST-Server.SQL.PGString</module>
         <module>FROST-Server.SQL.PGUuid</module>
+        <module>SWE-Common</module>
     </modules>
 
     <properties>
