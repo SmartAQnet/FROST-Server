@@ -28,28 +28,28 @@ import de.fraunhofer.iosb.ilt.swe.common.constraint.AllowedTokens;
  */
 public class Text extends AbstractSimpleComponent {
 
-	private String value;
-	private AllowedTokens constraint;
+    private String value;
+    private AllowedTokens constraint;
 
-	private EditorString editorValue;
-	private EditorClass<Void, Void, AllowedTokens> editorConstraint;
+    private EditorString editorValue;
+    private EditorClass<Void, Void, AllowedTokens> editorConstraint;
 
-	@Override
-	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-		EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
+    @Override
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
 
-		if (editorValue == null) {
-			editorValue = new EditorString(value, 1, "Value", "The value of this component.");
-			configEditor.addOption("value", editorValue, true);
+        if (editorValue == null) {
+            editorValue = new EditorString(value, 1, "Value", "The value of this component.");
+            configEditor.addOption("value", editorValue, true);
 
-			editorConstraint = new EditorClass<>(context, edtCtx, AllowedTokens.class, "Constraint", "The constraints put on the value of this component.");
-			configEditor.addOption("constraint", editorConstraint, true);
-			if (constraint != null) {
-				editorConstraint.setValue(constraint);
-			}
-		}
+            editorConstraint = new EditorClass<>(context, edtCtx, AllowedTokens.class, "Constraint", "The constraints put on the value of this component.");
+            configEditor.addOption("constraint", editorConstraint, true);
+            if (constraint != null) {
+                editorConstraint.setValue(constraint);
+            }
+        }
 
-		return configEditor;
-	}
+        return configEditor;
+    }
 
 }

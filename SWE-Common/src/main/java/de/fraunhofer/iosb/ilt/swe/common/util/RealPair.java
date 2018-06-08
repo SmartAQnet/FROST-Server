@@ -15,19 +15,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common;
-
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
+package de.fraunhofer.iosb.ilt.swe.common.util;
 
 /**
  *
- * @author Hylke van der Schaaf
+ * @author scf
  */
-public class Quantity extends AbstractSimpleComponent {
-
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        return super.getConfigEditor(context, edtCtx);
-    }
+public class RealPair {
 
 }

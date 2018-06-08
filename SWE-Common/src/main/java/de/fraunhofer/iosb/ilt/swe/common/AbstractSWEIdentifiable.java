@@ -26,34 +26,30 @@ import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
  */
 public abstract class AbstractSWEIdentifiable extends AbstractSWE {
 
-	private String identifier;
-	private String label;
-	private String description;
-	/**
-	 * The name, if this class is used as a Field.
-	 */
-	private String name;
+    private String identifier;
+    private String label;
+    private String description;
 
-	private EditorMap configEditor;
-	private EditorString editorIdentifier;
-	private EditorString editorLabel;
-	private EditorString editorDescription;
+    private EditorMap configEditor;
+    private EditorString editorIdentifier;
+    private EditorString editorLabel;
+    private EditorString editorDescription;
 
-	@Override
-	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-		if (configEditor == null) {
-			configEditor = new EditorMap();
+    @Override
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+        if (configEditor == null) {
+            configEditor = new EditorMap();
 
-			editorIdentifier = new EditorString(identifier, 1, "Identifier", "A unique identifier.");
-			configEditor.addOption("identifier", editorIdentifier, true);
+            editorIdentifier = new EditorString(identifier, 1, "Identifier", "A unique identifier.");
+            configEditor.addOption("identifier", editorIdentifier, true);
 
-			editorLabel = new EditorString(label, 1, "Label", "A short descriptive name.");
-			configEditor.addOption("label", editorLabel, true);
+            editorLabel = new EditorString(label, 1, "Label", "A short descriptive name.");
+            configEditor.addOption("label", editorLabel, true);
 
-			editorDescription = new EditorString(description, 3, "Description", "A longer description.");
-			configEditor.addOption("description", editorDescription, true);
-		}
-		return configEditor;
-	}
+            editorDescription = new EditorString(description, 3, "Description", "A longer description.");
+            configEditor.addOption("description", editorDescription, true);
+        }
+        return configEditor;
+    }
 
 }

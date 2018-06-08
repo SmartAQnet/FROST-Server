@@ -15,29 +15,26 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common.constraint;
+package de.fraunhofer.iosb.ilt.swe.common;
 
 import com.google.gson.JsonElement;
-import de.fraunhofer.iosb.ilt.configurable.ConfigEditor;
+
 import de.fraunhofer.iosb.ilt.configurable.Configurable;
 import de.fraunhofer.iosb.ilt.configurable.EditorFactory;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
-import java.util.List;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorSubclass;
 
 /**
  *
- * @author Hylke van der Schaaf
+ * @author scf
  */
-public class AllowedTokens implements Configurable<Void, Void> {
-
-    private List<String> value;
-    private String pattern;
+public class Field implements Configurable<Void, Void> {
 
     private EditorMap configEditor;
-    private EditorString editorPattern;
-    private EditorList<String, EditorString> editorValue;
+    private EditorString editorName;
+    private EditorList<AbstractDataComponent, EditorSubclass<Void, Void, AbstractDataComponent>> editorField;
 
     @Override
     public void configure(JsonElement config, Void context, Void edtCtx) {
@@ -45,16 +42,17 @@ public class AllowedTokens implements Configurable<Void, Void> {
     }
 
     @Override
-    public ConfigEditor<?> getConfigEditor(Void context, Void edtCtx) {
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
         if (configEditor == null) {
             configEditor = new EditorMap();
 
-            editorPattern = new EditorString(pattern, 1, "Pattern", "The regex(?) pattern that the value must match.");
-            configEditor.addOption("pattern", editorPattern, true);
+            editorName = new EditorString("NameMe!", 1, "Name", "A unique name.");
+            configEditor.addOption("name", editorName, false);
 
-            EditorFactory<EditorString> factory = () -> new EditorString("", 1);
-            editorValue = new EditorList(factory, "Value", "The values that the value can choose from.");
-            configEditor.addOption("value", editorValue, true);
+            EditorFactory<EditorSubclass<Void, Void, AbstractDataComponent>> factory
+                    = () -> new EditorSubclass(null, null, AbstractDataComponent.class, true, "type");
+            editorField = new EditorList<>(factory, "Type", "The type of this field");
+            configEditor.addOption("type", editorField, false);
         }
         return configEditor;
     }

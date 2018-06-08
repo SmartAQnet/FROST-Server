@@ -17,7 +17,7 @@
  */
 package de.fraunhofer.iosb.ilt.swe.common;
 
-import de.fraunhofer.iosb.ilt.configurable.ConfigEditor;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 
 /**
  *
@@ -25,9 +25,9 @@ import de.fraunhofer.iosb.ilt.configurable.ConfigEditor;
  */
 public class Time extends AbstractSimpleComponent {
 
-	@Override
-	public ConfigEditor<?> getConfigEditor(Void context, Void edtCtx) {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
+    @Override
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+        return super.getConfigEditor(context, edtCtx);
+    }
 
 }

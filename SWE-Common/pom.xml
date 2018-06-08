@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>de.fraunhofer.iosb.ilt.FROST-Server</groupId>
-		<artifactId>FROST-ServerParent</artifactId>
-		<version>1.7-SNAPSHOT</version>
-	</parent>
-	<artifactId>SWE-Common</artifactId>
-	<packaging>jar</packaging>
-	<name>FROST-Server.SWE-Common</name>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>de.fraunhofer.iosb.ilt.FROST-Server</groupId>
+        <artifactId>FROST-ServerParent</artifactId>
+        <version>1.7-SNAPSHOT</version>
+    </parent>
+    <artifactId>SWE-Common</artifactId>
+    <packaging>jar</packaging>
+    <name>FROST-Server.SWE-Common</name>
 
-	<dependencies>
-		<dependency>
-			<groupId>de.fraunhofer.iosb.ilt</groupId>
-			<artifactId>Configurable</artifactId>
-			<version>0.8</version>
-		</dependency>
-	</dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>de.fraunhofer.iosb.ilt</groupId>
+            <artifactId>Configurable</artifactId>
+            <version>0.9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.8</version>
+        </dependency>
+    </dependencies>
 </project>

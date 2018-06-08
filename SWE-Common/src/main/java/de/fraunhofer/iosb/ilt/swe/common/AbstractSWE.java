@@ -26,9 +26,9 @@ import de.fraunhofer.iosb.ilt.configurable.Configurable;
  */
 public abstract class AbstractSWE implements Configurable<Void, Void> {
 
-	@Override
-	public void configure(JsonElement config, Void context, Void edtCtx) {
-		getConfigEditor(context, edtCtx).setConfig(config);
-	}
+    @Override
+    public void configure(JsonElement config, Void context, Void edtCtx) {
+        getConfigEditor(context, edtCtx).setConfig(config);
+    }
 
 }

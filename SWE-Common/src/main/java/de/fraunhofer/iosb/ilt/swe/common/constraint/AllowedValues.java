@@ -18,13 +18,18 @@
 package de.fraunhofer.iosb.ilt.swe.common.constraint;
 
 import com.google.gson.JsonElement;
+
 import de.fraunhofer.iosb.ilt.configurable.ConfigEditor;
 import de.fraunhofer.iosb.ilt.configurable.Configurable;
 import de.fraunhofer.iosb.ilt.configurable.EditorFactory;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
+
 import java.util.List;
+
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorDouble;
+import de.fraunhofer.iosb.ilt.swe.common.util.RealPair;
 
 /**
  *
@@ -32,32 +37,29 @@ import java.util.List;
  */
 public class AllowedValues implements Configurable<Void, Void> {
 
-	private List<Double> value;
-	private List<RealPair> interval;
-	private Integer significantFigures;
+    private List<Double> value;
+    private List<RealPair> interval;
+    private Integer significantFigures;
 
-	private EditorMap configEditor;
-	private EditorString editorPattern;
-	private EditorList<String, EditorString> editorValue;
+    private EditorMap configEditor;
+    private EditorString editorPattern;
+    private EditorList<String, EditorString> editorValue;
 
-	@Override
-	public void configure(JsonElement config, Void context, Void edtCtx) {
-		getConfigEditor(context, edtCtx).setConfig(config);
-	}
+    @Override
+    public void configure(JsonElement config, Void context, Void edtCtx) {
+        getConfigEditor(context, edtCtx).setConfig(config);
+    }
 
-	@Override
-	public ConfigEditor<?> getConfigEditor(Void context, Void edtCtx) {
-		if (configEditor == null) {
-			configEditor = new EditorMap();
+    @Override
+    public ConfigEditor<?> getConfigEditor(Void context, Void edtCtx) {
+        if (configEditor == null) {
+            configEditor = new EditorMap();
 
-			editorPattern = new EditorString(pattern, 1, "Pattern", "The regex(?) pattern that the value must match.");
-			configEditor.addOption("pattern", editorPattern, true);
-
-			EditorFactory<EditorString> factory = () -> new EditorString("", 1);
-			editorValue = new EditorList(factory, "Value", "The values that the value can choose from.");
-			configEditor.addOption("value", editorValue, true);
-		}
-		return configEditor;
-	}
+            EditorFactory<EditorDouble> factory = () -> new EditorDouble(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.MIN_VALUE, 0);
+            editorValue = new EditorList(factory, "Value", "The values that the value can choose from.");
+            configEditor.addOption("value", editorValue, true);
+        }
+        return configEditor;
+    }
 
 }

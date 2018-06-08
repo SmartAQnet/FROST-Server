@@ -25,20 +25,20 @@ import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
  */
 public abstract class AbstractSimpleComponent extends AbstractDataComponent {
 
-	// TODO
-	private String axisID;
-	// TODO
-	private Object nilValues;
-	// TODO
-	private Object referenceFrame;
-	// TODO
-	private Object quality;
+    // TODO
+    private String axisID;
+    // TODO
+    private Object nilValues;
+    // TODO
+    private Object referenceFrame;
+    // TODO
+    private Object quality;
 
-	@Override
-	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-		EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
+    @Override
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
 
-		return configEditor;
-	}
+        return configEditor;
+    }
 
 }

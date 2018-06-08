@@ -26,20 +26,20 @@ import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
  */
 public class SweBoolean extends AbstractSimpleComponent {
 
-	private Boolean value;
+    private Boolean value;
 
-	private EditorBoolean editorValue;
+    private EditorBoolean editorValue;
 
-	@Override
-	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-		EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
+    @Override
+    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
 
-		if (editorValue == null) {
-			editorValue = new EditorBoolean(value == null ? false : value, "Value", "The value of this component.");
-			configEditor.addOption("value", editorValue, true);
-		}
+        if (editorValue == null) {
+            editorValue = new EditorBoolean(value == null ? false : value, "Value", "The value of this component.");
+            configEditor.addOption("value", editorValue, true);
+        }
 
-		return configEditor;
-	}
+        return configEditor;
+    }
 
 }

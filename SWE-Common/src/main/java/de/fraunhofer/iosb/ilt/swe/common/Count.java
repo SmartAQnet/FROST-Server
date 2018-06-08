@@ -23,7 +23,6 @@ package de.fraunhofer.iosb.ilt.swe.common;
  */
 public class Count extends AbstractSimpleComponent {
 
-private Integer value;
-
+    private Integer value;
 
 }
