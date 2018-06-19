@@ -59,6 +59,7 @@ public enum EntityProperty implements Property {
     public final String jsonName;
     public final String getterName;
     public final String setterName;
+    public final String isSetName;
     public final boolean hasCustomProperties;
     private final Collection<String> aliases;
 
@@ -73,6 +74,7 @@ public enum EntityProperty implements Property {
         this.jsonName = name;
         this.getterName = "get" + name();
         this.setterName = "set" + name();
+        this.isSetName = "isSet" + name();
         this.hasCustomProperties = hasCustomProperties;
     }
 
@@ -85,6 +87,7 @@ public enum EntityProperty implements Property {
         this.aliases.addAll(Arrays.asList(aliases));
         this.getterName = "get" + name();
         this.setterName = "set" + name();
+        this.isSetName = "isSet" + name();
         this.hasCustomProperties = false;
     }
 
@@ -117,6 +120,11 @@ public enum EntityProperty implements Property {
     @Override
     public String getSetterName() {
         return setterName;
+    }
+
+    @Override
+    public String getIsSetName() {
+        return isSetName;
     }
 
 }

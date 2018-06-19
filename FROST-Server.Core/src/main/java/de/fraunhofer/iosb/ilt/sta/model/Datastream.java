@@ -74,8 +74,14 @@ public class Datastream extends AbstractEntity {
     private boolean setProperties;
 
     public Datastream() {
+        this(false);
+    }
+
+    public Datastream(boolean onlyId) {
         this.observations = new EntitySetImpl<>(EntityType.Observation);
-        this.unitOfMeasurement = new UnitOfMeasurement();
+        if (!onlyId) {
+            this.unitOfMeasurement = new UnitOfMeasurement();
+        }
     }
 
     public Datastream(Id id,
@@ -243,7 +249,7 @@ public class Datastream extends AbstractEntity {
 
     public void setName(String name) {
         this.name = name;
-        setName = true;
+        setName = name != null;
     }
 
     /**
@@ -251,7 +257,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setDescription(String description) {
         this.description = description;
-        setDescription = true;
+        setDescription = description != null;
     }
 
     /**
@@ -259,7 +265,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setObservationType(String observationType) {
         this.observationType = observationType;
-        setObservationType = true;
+        setObservationType = observationType != null;
     }
 
     /**
@@ -267,7 +273,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setUnitOfMeasurement(UnitOfMeasurement unitOfMeasurement) {
         this.unitOfMeasurement = unitOfMeasurement;
-        setUnitOfMeasurement = true;
+        setUnitOfMeasurement = unitOfMeasurement != null;
     }
 
     /**
@@ -275,7 +281,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setSensor(Sensor sensor) {
         this.sensor = sensor;
-        setSensor = true;
+        setSensor = sensor != null;
     }
 
     /**
@@ -283,7 +289,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setObservedProperty(ObservedProperty observedProperty) {
         this.observedProperty = observedProperty;
-        setObservedProperty = true;
+        setObservedProperty = observedProperty != null;
     }
 
     /**
@@ -298,7 +304,7 @@ public class Datastream extends AbstractEntity {
      */
     public void setThing(Thing thing) {
         this.thing = thing;
-        setThing = true;
+        setThing = thing != null;
     }
 
     @Override

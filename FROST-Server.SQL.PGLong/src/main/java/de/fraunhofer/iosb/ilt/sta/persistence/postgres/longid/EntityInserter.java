@@ -30,6 +30,7 @@ import com.querydsl.sql.SQLQuery;
 import com.querydsl.sql.SQLQueryFactory;
 import com.querydsl.sql.dml.SQLInsertClause;
 import com.querydsl.sql.dml.SQLUpdateClause;
+import de.fraunhofer.iosb.ilt.sta.json.deserialize.EntityParser;
 import de.fraunhofer.iosb.ilt.sta.json.deserialize.custom.GeoJsonDeserializier;
 import de.fraunhofer.iosb.ilt.sta.json.serialize.GeoJsonSerializer;
 import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
@@ -573,9 +574,8 @@ public class EntityInserter {
         QThings qt = QThings.things;
         QDatastreams qd = QDatastreams.datastreams;
         QMultiDatastreams qmd = QMultiDatastreams.multiDatastreams;
-        // TODO: Should probably contain a where that only returns locations
-        // with a supported encoding type.
-        SQLQuery<Tuple> query = qf.select(ql.id, ql.genFoiId)
+
+        SQLQuery<Tuple> query = qf.select(ql.id, ql.genFoiId, ql.encodingType)
                 .from(ql)
                 .innerJoin(qtl).on(ql.id.eq(qtl.locationId))
                 .innerJoin(qt).on(qt.id.eq(qtl.thingId));
@@ -586,20 +586,37 @@ public class EntityInserter {
             query.innerJoin(qd).on(qd.thingId.eq(qt.id))
                     .where(qd.id.eq(dsId));
         }
-        Tuple tuple = query.fetchOne();
-        if (tuple == null) {
+        List<Tuple> tuples = query.fetch();
+        if (tuples.isEmpty()) {
             // Can not generate foi from Thing with no locations.
             throw new NoSuchEntityException("Can not generate foi for Thing with no locations.");
         }
-        Long genFoiId = tuple.get(ql.genFoiId);
-        Long locationId = tuple.get(ql.id);
+        // See if any of the locations have a generated foi.
+        // Also track if any of the location has a supported encoding type.
+        Long genFoiId = null;
+        Long locationId = null;
+        for (Tuple tuple : tuples) {
+            genFoiId = tuple.get(ql.genFoiId);
+            if (genFoiId != null) {
+                break;
+            }
+            String encodingType = tuple.get(ql.encodingType);
+            if (encodingType != null && GeoJsonDeserializier.ENCODINGS.contains(encodingType.toLowerCase())) {
+                locationId = tuple.get(ql.id);
+            }
+        }
+        // Either genFoiId will have a value, if a generated foi was found,
+        // Or locationId will have a value if a supported encoding type was found.
 
         FeatureOfInterest foi;
-        if (genFoiId == null) {
+        if (genFoiId != null) {
+            foi = new FeatureOfInterest();
+            foi.setId(new IdLong(genFoiId));
+        } else if (locationId != null) {
             query = qf.select(ql.id, ql.encodingType, ql.location)
                     .from(ql)
                     .where(ql.id.eq(locationId));
-            tuple = query.fetchOne();
+            Tuple tuple = query.fetchOne();
             if (tuple == null) {
                 // Can not generate foi from Thing with no locations.
                 // Should not happen, since the query succeeded just before.
@@ -622,8 +639,8 @@ public class EntityInserter {
                     .execute();
             LOGGER.debug("Generated foi {} from Location {}.", foiId, locationId);
         } else {
-            foi = new FeatureOfInterest();
-            foi.setId(new IdLong(genFoiId));
+            // Can not generate foi from Thing with no locations.
+            throw new NoSuchEntityException("Can not generate foi for Thing, all locations have an un supported encoding type.");
         }
         return foi;
     }
@@ -1621,7 +1638,7 @@ public class EntityInserter {
      * @return The insert or update clause.
      */
     private <T extends StoreClause> T insertGeometry(T clause, StringPath locationPath, GeometryPath<Geometry> geomPath, String encodingType, final Object location) {
-        if (encodingType != null && GeoJsonDeserializier.encodings.contains(encodingType.toLowerCase())) {
+        if (encodingType != null && GeoJsonDeserializier.ENCODINGS.contains(encodingType.toLowerCase())) {
             String locJson;
             try {
                 locJson = new GeoJsonSerializer().serialize(location);
@@ -1850,7 +1867,7 @@ public class EntityInserter {
 
     public ObjectMapper getFormatter() {
         if (formatter == null) {
-            formatter = new ObjectMapper();
+            formatter = EntityParser.getSimpleObjectMapper();
         }
         return formatter;
     }
