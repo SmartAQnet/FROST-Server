@@ -15,10 +15,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common;
+package de.fraunhofer.iosb.ilt.swe.common.simple;
 
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorClass;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
 import de.fraunhofer.iosb.ilt.swe.common.constraint.AllowedTokens;
 
@@ -26,30 +27,27 @@ import de.fraunhofer.iosb.ilt.swe.common.constraint.AllowedTokens;
  *
  * @author Hylke van der Schaaf
  */
+@ConfigurableClass(jsonName = "Text")
 public class Text extends AbstractSimpleComponent {
 
-    private String value;
-    private AllowedTokens constraint;
+	@ConfigurableField(editor = EditorString.class, optional = true,
+			label = "Value",
+			description = "The value of this field.")
+	@EditorString.EdOptsString()
+	private String value;
 
-    private EditorString editorValue;
-    private EditorClass<Void, Void, AllowedTokens> editorConstraint;
+	@ConfigurableField(editor = EditorClass.class, optional = true,
+			label = "Constraint",
+			description = "The constraints put on the value of this component.")
+	@EditorClass.EdOptsClass(clazz = AllowedTokens.class)
+	private AllowedTokens constraint;
 
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
+	public String getValue() {
+		return value;
+	}
 
-        if (editorValue == null) {
-            editorValue = new EditorString(value, 1, "Value", "The value of this component.");
-            configEditor.addOption("value", editorValue, true);
-
-            editorConstraint = new EditorClass<>(context, edtCtx, AllowedTokens.class, "Constraint", "The constraints put on the value of this component.");
-            configEditor.addOption("constraint", editorConstraint, true);
-            if (constraint != null) {
-                editorConstraint.setValue(constraint);
-            }
-        }
-
-        return configEditor;
-    }
+	public AllowedTokens getConstraint() {
+		return constraint;
+	}
 
 }

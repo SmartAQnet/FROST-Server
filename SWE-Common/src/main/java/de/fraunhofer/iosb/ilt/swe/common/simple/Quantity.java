@@ -15,19 +15,21 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common;
+package de.fraunhofer.iosb.ilt.swe.common.simple;
 
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
+@ConfigurableClass(jsonName = "Quantity")
 public class Quantity extends AbstractSimpleComponent {
 
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        return super.getConfigEditor(context, edtCtx);
-    }
+	@Override
+	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+		return super.getConfigEditor(context, edtCtx);
+	}
 
 }

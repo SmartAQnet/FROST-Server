@@ -17,18 +17,12 @@
  */
 package de.fraunhofer.iosb.ilt.swe.common;
 
-import com.google.gson.JsonElement;
-import de.fraunhofer.iosb.ilt.configurable.Configurable;
+import de.fraunhofer.iosb.ilt.configurable.AbstractConfigurable;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
-public abstract class AbstractSWE implements Configurable<Void, Void> {
-
-    @Override
-    public void configure(JsonElement config, Void context, Void edtCtx) {
-        getConfigEditor(context, edtCtx).setConfig(config);
-    }
+public abstract class AbstractSWE extends AbstractConfigurable<Void, Void> {
 
 }

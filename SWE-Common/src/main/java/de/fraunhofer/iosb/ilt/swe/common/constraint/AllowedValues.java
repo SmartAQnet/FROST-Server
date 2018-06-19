@@ -17,49 +17,53 @@
  */
 package de.fraunhofer.iosb.ilt.swe.common.constraint;
 
-import com.google.gson.JsonElement;
-
-import de.fraunhofer.iosb.ilt.configurable.ConfigEditor;
-import de.fraunhofer.iosb.ilt.configurable.Configurable;
-import de.fraunhofer.iosb.ilt.configurable.EditorFactory;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
-
-import java.util.List;
-
+import de.fraunhofer.iosb.ilt.configurable.AbstractConfigurable;
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorClass;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorDouble;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorInt;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
 import de.fraunhofer.iosb.ilt.swe.common.util.RealPair;
+import java.util.List;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
-public class AllowedValues implements Configurable<Void, Void> {
+@ConfigurableClass(jsonName = "AllowedValues")
+public class AllowedValues extends AbstractConfigurable<Void, Void> {
 
-    private List<Double> value;
-    private List<RealPair> interval;
-    private Integer significantFigures;
+	@ConfigurableField(editor = EditorList.class, optional = true,
+			label = "Values",
+			description = "The values that the user can choose from.")
+	@EditorList.EdOptsList(editor = EditorDouble.class)
+	@EditorDouble.EdOptsDouble(min = Double.NEGATIVE_INFINITY, max = Double.POSITIVE_INFINITY, step = Double.MIN_VALUE, dflt = 0)
+	private List<Double> value;
 
-    private EditorMap configEditor;
-    private EditorString editorPattern;
-    private EditorList<String, EditorString> editorValue;
+	@ConfigurableField(editor = EditorList.class, optional = true,
+			label = "Intervals",
+			description = "The intervals that the value must fall in.")
+	@EditorList.EdOptsList(editor = EditorClass.class)
+	@EditorClass.EdOptsClass(clazz = RealPair.class)
+	private List<RealPair> interval;
 
-    @Override
-    public void configure(JsonElement config, Void context, Void edtCtx) {
-        getConfigEditor(context, edtCtx).setConfig(config);
-    }
+	@ConfigurableField(editor = EditorInt.class, optional = true,
+			label = "Figures",
+			description = "The number of significant figures.")
+	@EditorInt.EdOptsInt(min = 0, max = 100, step = 1, dflt = 1)
+	private Integer significantFigures;
 
-    @Override
-    public ConfigEditor<?> getConfigEditor(Void context, Void edtCtx) {
-        if (configEditor == null) {
-            configEditor = new EditorMap();
+	public List<Double> getValue() {
+		return value;
+	}
 
-            EditorFactory<EditorDouble> factory = () -> new EditorDouble(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.MIN_VALUE, 0);
-            editorValue = new EditorList(factory, "Value", "The values that the value can choose from.");
-            configEditor.addOption("value", editorValue, true);
-        }
-        return configEditor;
-    }
+	public List<RealPair> getInterval() {
+		return interval;
+	}
+
+	public Integer getSignificantFigures() {
+		return significantFigures;
+	}
 
 }

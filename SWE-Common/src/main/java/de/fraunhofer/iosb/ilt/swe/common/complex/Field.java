@@ -15,41 +15,40 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common.constraint;
+package de.fraunhofer.iosb.ilt.swe.common.complex;
 
 import de.fraunhofer.iosb.ilt.configurable.AbstractConfigurable;
-import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
 import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
-import java.util.List;
+import de.fraunhofer.iosb.ilt.configurable.editor.EditorSubclass;
+import de.fraunhofer.iosb.ilt.swe.common.AbstractDataComponent;
 
 /**
  *
- * @author Hylke van der Schaaf
+ * @author scf
  */
-@ConfigurableClass(jsonName = "AllowedTokens")
-public class AllowedTokens extends AbstractConfigurable<Void, Void> {
+public class Field extends AbstractConfigurable<Void, Void> {
 
-	@ConfigurableField(editor = EditorList.class, optional = true,
-			label = "Value",
-			description = "The values that the user can choose from.")
-	@EditorList.EdOptsList(editor = EditorString.class)
+	@ConfigurableField(editor = EditorString.class,
+			label = "Name", description = "The unique name for this field.")
 	@EditorString.EdOptsString()
-	private List<String> value;
+	private String name;
 
-	@ConfigurableField(editor = EditorString.class, optional = true,
-			label = "Pattern",
-			description = "The regex(?) pattern that the value must match.")
-	@EditorString.EdOptsString()
-	private String pattern;
+	@ConfigurableField(editor = EditorSubclass.class,
+			merge = true,
+			label = "Field",
+			description = "The actual field.")
+	@EditorSubclass.EdOptsSubclass(iface = AbstractDataComponent.class,
+			merge = true,
+			nameField = "type")
+	private AbstractDataComponent field;
 
-	public List<String> getValue() {
-		return value;
+	public String getName() {
+		return name;
 	}
 
-	public String getPattern() {
-		return pattern;
+	public AbstractDataComponent getField() {
+		return field;
 	}
 
 }

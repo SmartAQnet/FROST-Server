@@ -17,7 +17,7 @@
  */
 package de.fraunhofer.iosb.ilt.swe.common;
 
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
 
 /**
@@ -26,30 +26,34 @@ import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
  */
 public abstract class AbstractSWEIdentifiable extends AbstractSWE {
 
-    private String identifier;
-    private String label;
-    private String description;
+	@ConfigurableField(editor = EditorString.class, optional = true,
+			label = "Identifier",
+			description = "A unique identifier.")
+	@EditorString.EdOptsString()
+	private String identifier;
 
-    private EditorMap configEditor;
-    private EditorString editorIdentifier;
-    private EditorString editorLabel;
-    private EditorString editorDescription;
+	@ConfigurableField(editor = EditorString.class, optional = true,
+			label = "Label",
+			description = "A short descriptive name.")
+	@EditorString.EdOptsString()
+	private String label;
 
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        if (configEditor == null) {
-            configEditor = new EditorMap();
+	@ConfigurableField(editor = EditorString.class, optional = true,
+			label = "Description",
+			description = "A longer description.")
+	@EditorString.EdOptsString()
+	private String description;
 
-            editorIdentifier = new EditorString(identifier, 1, "Identifier", "A unique identifier.");
-            configEditor.addOption("identifier", editorIdentifier, true);
+	public String getIdentifier() {
+		return identifier;
+	}
 
-            editorLabel = new EditorString(label, 1, "Label", "A short descriptive name.");
-            configEditor.addOption("label", editorLabel, true);
+	public String getLabel() {
+		return label;
+	}
 
-            editorDescription = new EditorString(description, 3, "Description", "A longer description.");
-            configEditor.addOption("description", editorDescription, true);
-        }
-        return configEditor;
-    }
+	public String getDescription() {
+		return description;
+	}
 
 }

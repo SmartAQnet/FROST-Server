@@ -15,14 +15,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common;
+package de.fraunhofer.iosb.ilt.swe.common.simple;
+
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
+@ConfigurableClass(jsonName = "Count")
 public class Count extends AbstractSimpleComponent {
 
-    private Integer value;
+	private Integer value;
 
 }

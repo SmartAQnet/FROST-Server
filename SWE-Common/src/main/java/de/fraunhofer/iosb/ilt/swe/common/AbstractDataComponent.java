@@ -17,8 +17,8 @@
  */
 package de.fraunhofer.iosb.ilt.swe.common;
 
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorBoolean;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
 
 /**
@@ -27,30 +27,34 @@ import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
  */
 public abstract class AbstractDataComponent extends AbstractSWEIdentifiable {
 
-    private String definition;
-    private Boolean optional;
-    private Boolean updatable;
+	@ConfigurableField(editor = EditorString.class, optional = true,
+			label = "Definition",
+			description = "A scoped namethat maps to a controlled term defined in a (web accessible) dictionary, registry or ontology.")
+	@EditorString.EdOptsString()
+	private String definition;
 
-    private EditorString editorDefinition;
-    private EditorBoolean editorOptional;
-    private EditorBoolean editorUpdatable;
+	@ConfigurableField(editor = EditorBoolean.class, optional = true,
+			label = "Optional",
+			description = "A flag indicating if the component value can be omitted.")
+	@EditorBoolean.EdOptsBool(dflt = false)
+	private boolean optional;
 
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
+	@ConfigurableField(editor = EditorBoolean.class, optional = true,
+			label = "Updatable",
+			description = "A flag indicating if the component value is fixed or can be updated.")
+	@EditorBoolean.EdOptsBool(dflt = false)
+	private boolean updatable;
 
-        if (editorDefinition == null) {
-            editorDefinition = new EditorString(definition, 1, "Definition", "A scoped namethat maps to a controlled term defined in a (web accessible) dictionary, registry or ontology.");
-            configEditor.addOption("definition", editorDefinition, true);
+	public String getDefinition() {
+		return definition;
+	}
 
-            editorOptional = new EditorBoolean(updatable == null ? false : updatable, "Optional", "A flag indicating if the component value can be omitted.");
-            configEditor.addOption("optional", editorOptional, true);
+	public Boolean isOptional() {
+		return optional;
+	}
 
-            editorUpdatable = new EditorBoolean(updatable == null ? false : updatable, "Updatable", "A flag indicating if the component value is fixed or can be updated.");
-            configEditor.addOption("updatable", editorUpdatable, true);
-        }
-
-        return configEditor;
-    }
+	public Boolean isUpdatable() {
+		return updatable;
+	}
 
 }

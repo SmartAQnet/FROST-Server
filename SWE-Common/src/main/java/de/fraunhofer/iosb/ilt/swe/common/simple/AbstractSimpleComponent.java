@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
+ * Copyright (C) 2017 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
  * Karlsruhe, Germany.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,41 +15,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common.constraint;
+package de.fraunhofer.iosb.ilt.swe.common.simple;
 
-import de.fraunhofer.iosb.ilt.configurable.AbstractConfigurable;
-import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
 import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableField;
-import de.fraunhofer.iosb.ilt.configurable.editor.EditorList;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorString;
-import java.util.List;
+import de.fraunhofer.iosb.ilt.swe.common.AbstractDataComponent;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
-@ConfigurableClass(jsonName = "AllowedTokens")
-public class AllowedTokens extends AbstractConfigurable<Void, Void> {
-
-	@ConfigurableField(editor = EditorList.class, optional = true,
-			label = "Value",
-			description = "The values that the user can choose from.")
-	@EditorList.EdOptsList(editor = EditorString.class)
-	@EditorString.EdOptsString()
-	private List<String> value;
+public abstract class AbstractSimpleComponent extends AbstractDataComponent {
 
 	@ConfigurableField(editor = EditorString.class, optional = true,
-			label = "Pattern",
-			description = "The regex(?) pattern that the value must match.")
+			label = "AcisID",
+			description = "A string that uniquely identifies one of the reference frame’s axes along which the coordinate value is given.")
 	@EditorString.EdOptsString()
-	private String pattern;
+	private String axisID;
+	// TODO
+	private Object nilValues;
+	// TODO
+	private Object referenceFrame;
+	// TODO
+	private Object quality;
 
-	public List<String> getValue() {
-		return value;
-	}
-
-	public String getPattern() {
-		return pattern;
+	public String getAxisID() {
+		return axisID;
 	}
 
 }

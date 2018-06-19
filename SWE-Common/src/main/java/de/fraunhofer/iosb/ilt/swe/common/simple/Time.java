@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
+ * Copyright (C) 2018 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
  * Karlsruhe, Germany.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,30 +15,21 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.fraunhofer.iosb.ilt.swe.common;
+package de.fraunhofer.iosb.ilt.swe.common.simple;
 
+import de.fraunhofer.iosb.ilt.configurable.annotations.ConfigurableClass;
 import de.fraunhofer.iosb.ilt.configurable.editor.EditorMap;
 
 /**
  *
  * @author Hylke van der Schaaf
  */
-public abstract class AbstractSimpleComponent extends AbstractDataComponent {
+@ConfigurableClass(jsonName = "Time")
+public class Time extends AbstractSimpleComponent {
 
-    // TODO
-    private String axisID;
-    // TODO
-    private Object nilValues;
-    // TODO
-    private Object referenceFrame;
-    // TODO
-    private Object quality;
-
-    @Override
-    public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
-        EditorMap<?> configEditor = super.getConfigEditor(context, edtCtx);
-
-        return configEditor;
-    }
+	@Override
+	public EditorMap<?> getConfigEditor(Void context, Void edtCtx) {
+		return super.getConfigEditor(context, edtCtx);
+	}
 
 }
