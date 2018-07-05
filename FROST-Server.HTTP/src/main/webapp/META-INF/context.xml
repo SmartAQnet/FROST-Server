@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="/FROST-Server">
+    <!--
+        Configuration file for Tomcat.
+        Usually Tomcat will copy this file to $CATALINA_BASE/conf/[enginename]/[hostname]/SensorThingsServer.xml
+        Override=true means Tomcat uses the value configured in web.xml
+    -->
+    <!-- service setting -->
+    <Parameter override="false" name="ApiVersion" value="v1.0" description="The version tag of the API used in the URL."/>
+    <Parameter override="false" name="serviceRootUrl" value="http://localhost:8080/FROST-Server" description="The base URL of the SensorThings Server without version."/>
+    <Parameter override="false" name="defaultCount" value="false" description="The default value for the $count query option."/>
+    <Parameter override="false" name="defaultTop" value="100" description="The default value for the $top query option."/>
+    <Parameter override="false" name="maxTop" value="1000" description="The maximum allowed value for the $top query option."/>
+    <Parameter override="false" name="maxDataSize" value="25000000" description="The maximum allowed estimated data size (in bytes) for responses."/>
+    <Parameter override="false" name="useAbsoluteNavigationLinks" value="true" description="If true, navigationLinks are absolute, otherwise relative."/>
+    <!-- bus setting -->
+    <Parameter override="false" name="bus.busImplementationClass" value="de.fraunhofer.iosb.ilt.sta.messagebus.MqttMessageBus" description="The java class used for connecting to the message bus."/>
+    <Parameter override="false" name="bus.mqttBroker" value="tcp://mosquitto:1883" description="The MQTT broker to use as message bus"/>
+    <!-- persistence setting -->
+    <Parameter override="false" name="persistence.persistenceManagerImplementationClass" value="de.fraunhofer.iosb.ilt.sta.persistence.postgres.longid.PostgresPersistenceManagerLong" description="The java class used for persistence (must implement PersistenceManaher interface)"/>
+    <!-- All options:
+        de.fraunhofer.iosb.ilt.sta.persistence.postgres.longid.PostgresPersistenceManagerLong
+        de.fraunhofer.iosb.ilt.sta.persistence.postgres.stringid.PostgresPersistenceManagerString
+        de.fraunhofer.iosb.ilt.sta.persistence.postgres.uuidid.PostgresPersistenceManagerUuid
+    -->
+    <Parameter override="false" name="persistence.idGenerationMode" value="ServerGeneratedOnly" description="Mode for id generation when using PostgresPersistenceManagerString."/>
+    <!-- All options:
+        "ServerGeneratedOnly"       = No client defined ids allowed.
+        "ServerAndClientGenerated"  = Both, server and client generated ids, are allowed.
+        "ClientGeneratedOnly"       = Client has to provide @iot.id to create entities.
+    -->
+    <Parameter override="false" name="persistence.alwaysOrderbyId" value="false" description="Always add an 'orderby=id asc' to queries to ensure consistent paging."/>
+    <!-- JNDO Database connection. Does suppport connection pooling. -->
+    <Parameter override="false" name="persistence.db_jndi_datasource" value="jdbc/sensorThings" description="JNDI data source name"/>
+    <Resource
+        name="jdbc/sensorThings" auth="Container"
+        type="javax.sql.DataSource" driverClassName="org.postgresql.Driver"
+        url="jdbc:postgresql://database:5432/sensorthings"
+        username="sensorthings" password="ChangeMe"
+        maxTotal="20" maxIdle="10" maxWaitMillis="-1"
+        defaultAutoCommit="false"
+    />
+    <Realm
+        className="org.apache.catalina.realm.DataSourceRealm"
+        dataSourceName="jdbc/sensorThings"
+        localDataSource="true"
+        userTable="users" userRoleTable="user_roles"
+        userNameCol="user_name"
+        userCredCol="user_pass"
+        roleNameCol="role_name"/>
+</Context>
