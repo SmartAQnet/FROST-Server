@@ -20,6 +20,7 @@ package de.fraunhofer.iosb.ilt.sta.util;
 import de.fraunhofer.iosb.ilt.sta.persistence.IdManager;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,6 +54,26 @@ public class UrlHelperTest {
         testNextLink(IdManager.ID_MANAGER_LONG, baseUrl, expectedNextUrl);
     }
 
+    private void testNextLink(String url) {
+        testNextLink(IdManager.ID_MANAGER_LONG, url);
+    }
+
+    private void testNextLink(IdManager idManager, String url) {
+        String baseUrl;
+        String expectedNextUrl;
+        if (url.contains("?")) {
+            baseUrl = url + "&$top=2";
+            expectedNextUrl = url + "&$skip=2&$top=2";
+        } else {
+            baseUrl = url + "?$top=2";
+            expectedNextUrl = url + "?$skip=2&$top=2";
+        }
+        testNextLink(
+                idManager,
+                baseUrl,
+                expectedNextUrl);
+    }
+
     private void testNextLink(IdManager idManager, String baseUrl, String expectedNextUrl) {
         ParserHelper.PathQuery queryBase = ParserHelper.parsePathAndQuery(idManager, "", baseUrl);
         ParserHelper.PathQuery queryExpected = ParserHelper.parsePathAndQuery(idManager, "", expectedNextUrl);
@@ -62,6 +83,19 @@ public class UrlHelperTest {
         ParserHelper.PathQuery next = ParserHelper.parsePathAndQuery(idManager, "", nextLink);
 
         assert (next.equals(queryExpected));
+    }
+
+    @Test
+    public void testEscapeForStringConstant() {
+        Assert.assertEquals("abcdefg", UrlHelper.escapeForStringConstant("abcdefg"));
+        Assert.assertEquals("''", UrlHelper.escapeForStringConstant("'"));
+        Assert.assertEquals("''''", UrlHelper.escapeForStringConstant("''"));
+    }
+
+    @Test
+    public void testUrlEncode() {
+        Assert.assertEquals("http%3A//example.org/Things%5Bxyz%27xyz%5D", UrlHelper.urlEncode("http://example.org/Things[xyz'xyz]", true));
+        Assert.assertEquals("http%3A%2F%2Fexample.org%2FThings%5Bxyz%27xyz%5D", UrlHelper.urlEncode("http://example.org/Things[xyz'xyz]", false));
     }
 
     @Test
@@ -147,7 +181,22 @@ public class UrlHelperTest {
                     "/Things?" + base + "&$top=2&$skip=2");
         }
     }
+
     // TODO: Add all filters
+    @Test
+    public void testNextLink_Filter() {
+        testNextLink(
+                "/Things?$filter=id eq 1");
+        testNextLink(
+                IdManager.ID_MANAGER_STRING,
+                "/Things?$filter=id eq 'one'&$top=2");
+        testNextLink(
+                "/Things?$filter=properties/prop1 eq 1&$top=2");
+        testNextLink(
+                "/Things?$filter=properties/prop1&$top=2");
+        testNextLink(
+                "/Datastreams?$filter=unitOfMeasurement/name eq 'metre'&$top=2");
+    }
 
     @Test
     public void testgetRelativePath() {

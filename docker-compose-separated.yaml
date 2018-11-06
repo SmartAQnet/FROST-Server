@@ -9,7 +9,15 @@ services:
       - database
       - mosquitto
     environment:
-      - bus.mqttBroker=tcp://mosquitto:1883
+      - serviceRootUrl=http://localhost:8080/FROST-Server
+      - http_cors_enable=true
+      - http_cors_allowed.origins=*
+      - bus_mqttBroker=tcp://mosquitto:1883
+      - persistence_db_driver=org.postgresql.Driver
+      - persistence_db_url=jdbc:postgresql://database:5432/sensorthings
+      - persistence_db_username=sensorthings
+      - persistence_db_password=ChangeMe
+      - persistence_autoUpdateDatabase=true
 
   mqtt:
     image: fraunhoferiosb/frost-server-mqtt:latest
@@ -23,8 +31,10 @@ services:
       - serviceRootUrl=http://localhost:8080/FROST-Server
       - bus_busImplementationClass=de.fraunhofer.iosb.ilt.sta.messagebus.MqttMessageBus
       - bus_mqttBroker=tcp://mosquitto:1883
-      - mqtt_CreateThreadPoolSize=100
-      - mqtt_CreateMessageQueueSize=1000
+      - mqtt_CreateThreadPoolSize=10
+      - mqtt_CreateMessageQueueSize=100
+      - mqtt_SubscribeThreadPoolSize=20
+      - mqtt_SubscribeMessageQueueSize=1000
       - persistence_persistenceManagerImplementationClass=de.fraunhofer.iosb.ilt.sta.persistence.postgres.longid.PostgresPersistenceManagerLong
       - persistence_db_driver=org.postgresql.Driver
       - persistence_db_url=jdbc:postgresql://database:5432/sensorthings

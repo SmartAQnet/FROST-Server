@@ -125,7 +125,8 @@ public enum EntityType {
         propertyMap.put(EntityProperty.SelfLink, false);
         propertyMap.put(EntityProperty.Name, true);
         propertyMap.put(EntityProperty.Description, true);
-        propertyMap.put(EntityProperty.ObservationType, true);
+        // ObservationType is required, but must always be the same, thus we set it ourselves.
+        propertyMap.put(EntityProperty.ObservationType, false);
         propertyMap.put(EntityProperty.MultiObservationDataTypes, true);
         propertyMap.put(EntityProperty.UnitOfMeasurements, true);
         propertyMap.put(EntityProperty.ObservedArea, false);

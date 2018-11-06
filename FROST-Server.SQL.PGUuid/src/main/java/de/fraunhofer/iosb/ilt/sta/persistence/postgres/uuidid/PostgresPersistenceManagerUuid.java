@@ -37,6 +37,7 @@ import de.fraunhofer.iosb.ilt.sta.model.Thing;
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.model.core.Id;
 import de.fraunhofer.iosb.ilt.sta.path.EntityPathElement;
+import de.fraunhofer.iosb.ilt.sta.path.EntityProperty;
 import de.fraunhofer.iosb.ilt.sta.path.EntitySetPathElement;
 import de.fraunhofer.iosb.ilt.sta.path.EntityType;
 import de.fraunhofer.iosb.ilt.sta.path.ResourcePath;
@@ -51,9 +52,13 @@ import de.fraunhofer.iosb.ilt.sta.settings.CoreSettings;
 import de.fraunhofer.iosb.ilt.sta.settings.Settings;
 import de.fraunhofer.iosb.ilt.sta.util.IncompleteEntityException;
 import de.fraunhofer.iosb.ilt.sta.util.NoSuchEntityException;
+import de.fraunhofer.iosb.ilt.sta.util.UpgradeFailedException;
+import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -331,6 +336,19 @@ public class PostgresPersistenceManagerUuid extends AbstractPersistenceManager i
     }
 
     @Override
+    public void doDelete(ResourcePath path, Query query) {
+        query.setSelect(Arrays.asList(EntityProperty.Id));
+        SQLQueryFactory qf = createQueryFactory();
+        PathSqlBuilderUuid psb = new PathSqlBuilderUuid();
+
+        SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, settings.getPersistenceSettings());
+        SQLDeleteClause sqlDelete = psb.createDelete((EntitySetPathElement) path.getLastElement(), qf, sqlQuery);
+
+        long rowCount = sqlDelete.execute();
+        LOGGER.debug("Deleted {} rows using query {}", rowCount, sqlDelete);
+    }
+
+    @Override
     public EntityChangedMessage doUpdate(EntityPathElement pathElement, Entity entity) throws NoSuchEntityException {
         EntityInserter ei = new EntityInserter(this);
         entity.setId(pathElement.getId());
@@ -461,7 +479,7 @@ public class PostgresPersistenceManagerUuid extends AbstractPersistenceManager i
         }
 
         SQLQueryFactory qf = createQueryFactory();
-        PathSqlBuilder psb = new PathSqlBuilderUuid();
+        PathSqlBuilderUuid psb = new PathSqlBuilderUuid();
         SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, settings.getPersistenceSettings());
 
         if (LOGGER.isTraceEnabled()) {
@@ -482,7 +500,7 @@ public class PostgresPersistenceManagerUuid extends AbstractPersistenceManager i
 
     public long count(ResourcePath path, Query query) {
         SQLQueryFactory qf = createQueryFactory();
-        PathSqlBuilder psb = new PathSqlBuilderUuid();
+        PathSqlBuilderUuid psb = new PathSqlBuilderUuid();
         SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, settings.getPersistenceSettings());
         return sqlQuery.fetchCount();
     }
@@ -515,8 +533,7 @@ public class PostgresPersistenceManagerUuid extends AbstractPersistenceManager i
     }
 
     @Override
-    public String doUpgrades() {
-        StringWriter out = new StringWriter();
+    public boolean doUpgrades(Writer out) throws UpgradeFailedException, IOException {
         try {
             Connection connection = getConnection(settings);
 
@@ -532,13 +549,15 @@ public class PostgresPersistenceManagerUuid extends AbstractPersistenceManager i
             out.append("Failed to initialise database:\n");
             out.append(ex.getLocalizedMessage());
             out.append("\n");
+            return false;
+
         } catch (LiquibaseException ex) {
-            LOGGER.error("Could not upgrade database.", ex);
             out.append("Failed to upgrade database:\n");
             out.append(ex.getLocalizedMessage());
             out.append("\n");
+            throw new UpgradeFailedException(ex);
         }
-        return out.toString();
+        return true;
     }
 
 }
