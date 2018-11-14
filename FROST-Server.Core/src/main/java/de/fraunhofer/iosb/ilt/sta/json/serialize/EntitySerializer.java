@@ -20,7 +20,6 @@ package de.fraunhofer.iosb.ilt.sta.json.serialize;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -59,11 +58,8 @@ public class EntitySerializer extends JsonSerializer<Entity> {
      */
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EntitySerializer.class);
 
-    public EntitySerializer() {
-    }
-
     @Override
-    public void serialize(Entity entity, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
+    public void serialize(Entity entity, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         gen.writeStartObject();
         try {
             BasicBeanDescription beanDescription = serializers.getConfig().introspect(serializers.constructType(entity.getClass()));
@@ -74,24 +70,12 @@ public class EntitySerializer extends JsonSerializer<Entity> {
                 // If not, we still have to check if it is expanded, hence no
                 // direct continue.
                 boolean selected = true;
-                if (selectedProperties != null) {
-                    if (!selectedProperties.contains(property.getName())) {
-                        selected = false;
-                    }
+                if (selectedProperties != null && !selectedProperties.contains(property.getName())) {
+                    selected = false;
                 }
                 // 1. is it a NavigableElement?
                 if (NavigableElement.class.isAssignableFrom(property.getAccessor().getRawType())) {
-                    Object rawValue = property.getAccessor().getValue(entity);
-                    if (rawValue != null) {
-                        NavigableElement value = (NavigableElement) rawValue;
-                        // If navigation link set, and selected, output navigation link.
-                        if (selected && value.getNavigationLink() != null && !value.getNavigationLink().isEmpty()) {
-                            gen.writeFieldName(property.getName() + "@iot.navigationLink");
-                            gen.writeString(value.getNavigationLink());
-                        }
-                        // If object should not be exported, skip any further processing.
-                        selected = value.isExportObject();
-                    }
+                    selected = serialiseNavigationElement(property, entity, selected, gen);
                 }
                 if (!selected) {
                     continue;
@@ -111,26 +95,46 @@ public class EntitySerializer extends JsonSerializer<Entity> {
                 }
                 // 3. check if property is EntitySet than write count if needed.
                 if (EntitySet.class.isAssignableFrom(property.getAccessor().getRawType())) {
-                    Object rawValue = property.getAccessor().getValue(entity);
-                    if (rawValue != null) {
-                        EntitySet set = (EntitySet) rawValue;
-                        long count = set.getCount();
-                        if (count >= 0) {
-                            gen.writeNumberField(property.getName() + "@iot.count", count);
-                        }
-                        String nextLink = set.getNextLink();
-                        if (nextLink != null) {
-                            gen.writeStringField(property.getName() + "@iot.nextLink", nextLink);
-                        }
-                    }
+                    writeCountNextlinkForSet(property, entity, gen);
                 }
             }
-        } catch (Exception e) {
-            LOGGER.error("could not serialize Entity", e);
-            throw new IOException("could not serialize Entity", e);
+        } catch (Exception exc) {
+            LOGGER.error("could not serialize Entity", exc);
+            throw new IOException("could not serialize Entity", exc);
         } finally {
             gen.writeEndObject();
         }
+    }
+
+    private void writeCountNextlinkForSet(BeanPropertyDefinition property, Entity entity, JsonGenerator gen) throws IOException {
+        Object rawValue = property.getAccessor().getValue(entity);
+        if (rawValue == null) {
+            return;
+        }
+        EntitySet set = (EntitySet) rawValue;
+        long count = set.getCount();
+        if (count >= 0) {
+            gen.writeNumberField(property.getName() + "@iot.count", count);
+        }
+        String nextLink = set.getNextLink();
+        if (nextLink != null) {
+            gen.writeStringField(property.getName() + "@iot.nextLink", nextLink);
+        }
+    }
+
+    private boolean serialiseNavigationElement(BeanPropertyDefinition property, Entity entity, boolean selected, JsonGenerator gen) throws IOException {
+        Object rawValue = property.getAccessor().getValue(entity);
+        if (rawValue == null) {
+            return selected;
+        }
+        NavigableElement value = (NavigableElement) rawValue;
+        // If navigation link set, and selected, output navigation link.
+        if (selected && value.getNavigationLink() != null && !value.getNavigationLink().isEmpty()) {
+            gen.writeFieldName(property.getName() + "@iot.navigationLink");
+            gen.writeString(value.getNavigationLink());
+        }
+        // If object should not be exported, skip any further processing.
+        return value.isExportObject();
     }
 
     protected void serializeFieldCustomized(
@@ -138,7 +142,7 @@ public class EntitySerializer extends JsonSerializer<Entity> {
             JsonGenerator gen,
             BeanPropertyDefinition property,
             List<BeanPropertyDefinition> properties,
-            CustomSerialization annotation) throws Exception {
+            CustomSerialization annotation) throws IOException {
         // check if encoding field is present in current bean
         // get value
         // call CustomSerializationManager

@@ -38,7 +38,7 @@ public class IdLong implements Id {
 
     @Override
     public BasicPersistenceType getBasicPersistenceType() {
-        return BasicPersistenceType.Integer;
+        return BasicPersistenceType.INTEGER;
     }
 
     @Override
@@ -52,10 +52,13 @@ public class IdLong implements Id {
     }
 
     @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 53 * hash + Objects.hashCode(this.value);
-        return hash;
+    public Long getValue() {
+        return value;
+    }
+
+    @Override
+    public String getUrl() {
+        return toString();
     }
 
     @Override
@@ -70,28 +73,17 @@ public class IdLong implements Id {
             return false;
         }
         final IdLong other = (IdLong) obj;
-        if (!Objects.equals(this.value, other.value)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.value, other.value);
     }
 
     @Override
-    public Long getValue() {
-        return value;
-    }
-
-    @Override
-    public String getUrl() {
-        return toString();
+    public int hashCode() {
+        return Objects.hash(value);
     }
 
     @Override
     public String toString() {
-        if (value == null) {
-            return "null";
-        }
-        return value.toString();
+        return Objects.toString(getValue());
     }
 
 }

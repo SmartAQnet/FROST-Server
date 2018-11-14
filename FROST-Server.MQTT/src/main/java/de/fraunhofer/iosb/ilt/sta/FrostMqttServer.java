@@ -21,18 +21,15 @@ import de.fraunhofer.iosb.ilt.sta.messagebus.MessageBusFactory;
 import de.fraunhofer.iosb.ilt.sta.mqtt.MqttManager;
 import de.fraunhofer.iosb.ilt.sta.persistence.PersistenceManagerFactory;
 import de.fraunhofer.iosb.ilt.sta.settings.CoreSettings;
-
+import de.fraunhofer.iosb.ilt.sta.util.GitVersionInfo;
+import de.fraunhofer.iosb.ilt.sta.util.StringHelper;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import de.fraunhofer.iosb.ilt.sta.settings.Settings;
 
 /**
  *
@@ -48,12 +45,28 @@ public class FrostMqttServer {
     private static final String KEY_WAIT_FOR_ENTER = "WaitForEnter";
     private static final String CONFIG_FILE_NAME = "FrostMqtt.properties";
     private final CoreSettings coreSettings;
+    private Thread shutdownHook;
 
     public FrostMqttServer(CoreSettings coreSettings) {
         this.coreSettings = coreSettings;
     }
 
+    private synchronized void addShutdownHook() {
+        if (this.shutdownHook == null) {
+            this.shutdownHook = new Thread(() -> {
+                LOGGER.info("Shutting down...");
+                try {
+                    stop();
+                } catch (Exception ex) {
+                    LOGGER.warn("Exception stopping listeners.", ex);
+                }
+            });
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        }
+    }
+
     public void start() {
+        addShutdownHook();
         PersistenceManagerFactory.init(coreSettings);
         MessageBusFactory.init(coreSettings);
         MqttManager.init(coreSettings);
@@ -68,6 +81,7 @@ public class FrostMqttServer {
             Thread.sleep(3000L);
         } catch (InterruptedException ex) {
             LOGGER.debug("Rude wakeup?", ex);
+            Thread.currentThread().interrupt();
         }
         LOGGER.info("Done shutting down threads.");
     }
@@ -81,11 +95,9 @@ public class FrostMqttServer {
             properties.load(input);
             LOGGER.info("Read {} properties from {}.", properties.size(), configFileName);
         } catch (IOException exc) {
-            LOGGER.info("Could not read properties from file: " + exc.getMessage());
+            LOGGER.info("Could not read properties from file: {}.", exc.getMessage());
         }
-        CoreSettings coreSettings = new CoreSettings(properties);
-
-        return coreSettings;
+        return new CoreSettings(properties);
     }
 
     /**
@@ -93,6 +105,8 @@ public class FrostMqttServer {
      * @throws java.io.FileNotFoundException if the config file is not found.
      */
     public static void main(String[] args) throws IOException {
+        GitVersionInfo.logGitInfo();
+
         String configFileName = CONFIG_FILE_NAME;
         if (args.length > 0) {
             configFileName = args[0];
@@ -103,10 +117,10 @@ public class FrostMqttServer {
 
         boolean waitForEnter = coreSettings.getMqttSettings().getCustomSettings().getBoolean(KEY_WAIT_FOR_ENTER, false);
         if (waitForEnter) {
-            try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in, "UTF-8"))) {
+            try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StringHelper.ENCODING))) {
                 LOGGER.warn("Press Enter to exit.");
-                input.read();
-                LOGGER.warn("Exiting...");
+                String read = input.readLine();
+                LOGGER.warn("Exiting due to input {}...", read);
                 server.stop();
                 System.exit(0);
             }

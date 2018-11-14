@@ -52,9 +52,7 @@ public class TimeInstant implements TimeValue {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 37 * hash + Objects.hashCode(this.dateTime);
-        return hash;
+        return Objects.hash(dateTime);
     }
 
     @Override
@@ -72,13 +70,10 @@ public class TimeInstant implements TimeValue {
         if (this.dateTime == null && other.dateTime == null) {
             return true;
         }
-        if (this.dateTime == null | other.dateTime == null) {
+        if (this.dateTime == null || other.dateTime == null) {
             return false;
         }
-        if (!this.dateTime.isEqual(other.dateTime)) {
-            return false;
-        }
-        return true;
+        return this.dateTime.isEqual(other.dateTime);
     }
 
     public static TimeInstant parse(String value) {

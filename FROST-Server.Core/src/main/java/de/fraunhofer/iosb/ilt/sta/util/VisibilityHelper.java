@@ -26,14 +26,12 @@ import de.fraunhofer.iosb.ilt.sta.path.Property;
 import de.fraunhofer.iosb.ilt.sta.path.ResourcePath;
 import de.fraunhofer.iosb.ilt.sta.query.Expand;
 import de.fraunhofer.iosb.ilt.sta.query.Query;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -41,22 +39,20 @@ import org.slf4j.LoggerFactory;
  */
 public class VisibilityHelper {
 
-    /**
-     * The logger for this class.
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(VisibilityHelper.class);
-
     private static class Visibility {
 
         Set<Property> allProperties = new HashSet<>();
         Set<Property> visibleProperties = new HashSet<>();
         Set<String> visiblePropertyNames;
         Set<NavigationProperty> navLinkProperties = new HashSet<>();
-        Map<NavigationProperty, Visibility> expandVisibility = new HashMap<>();
+        Map<NavigationProperty, Visibility> expandVisibility = new EnumMap<>(NavigationProperty.class);
 
         public Set<String> getVisiblePropertyNames() {
             if (visiblePropertyNames == null) {
-                visiblePropertyNames = visibleProperties.stream().map(x -> x.getJsonName()).collect(Collectors.toSet());
+                visiblePropertyNames = visibleProperties
+                        .stream()
+                        .map(Property::getJsonName)
+                        .collect(Collectors.toSet());
             }
             return visiblePropertyNames;
         }
@@ -92,7 +88,7 @@ public class VisibilityHelper {
         if (path.isRef()) {
             Set<Property> select = query.getSelect();
             select.clear();
-            select.add(EntityProperty.SelfLink);
+            select.add(EntityProperty.SELFLINK);
         }
         Visibility v = createVisibility(entity.getEntityType(), query, true);
         applyVisibility(entity, path, v, useAbsoluteNavigationLinks);
@@ -105,7 +101,7 @@ public class VisibilityHelper {
         if (path.isRef()) {
             Set<Property> select = query.getSelect();
             select.clear();
-            select.add(EntityProperty.SelfLink);
+            select.add(EntityProperty.SELFLINK);
         }
         EntityType type = entitySet.asList().get(0).getEntityType();
         Visibility v = createVisibility(type, query, true);
@@ -113,7 +109,9 @@ public class VisibilityHelper {
     }
 
     private static void applyVisibility(Entity e, ResourcePath path, Visibility v, boolean useAbsoluteNavigationLinks) {
-        e.setSelfLink(UrlHelper.generateSelfLink(path, e));
+        if (e.getId() != null) {
+            e.setSelfLink(UrlHelper.generateSelfLink(path, e));
+        }
         for (Property p : v.navLinkProperties) {
             Object child = e.getProperty(p);
             if (child instanceof Entity) {
@@ -158,37 +156,42 @@ public class VisibilityHelper {
                 copyEntityProperties(v.allProperties, v.visibleProperties);
             }
         }
-        if (query != null) {
-            if (!query.getSelect().isEmpty()) {
-                for (Property select : query.getSelect()) {
-                    v.visibleProperties.add(select);
-                    if (select instanceof NavigationProperty) {
-                        v.navLinkProperties.add((NavigationProperty) select);
-                    }
-                }
-            }
-
-            for (Expand expand : query.getExpand()) {
-                List<NavigationProperty> expPath = expand.getPath();
-                Visibility level = v;
-                for (int i = 0; i < expPath.size(); i++) {
-                    NavigationProperty np = expPath.get(i);
-                    Visibility subLevel;
-                    if (i == expPath.size() - 1) {
-                        subLevel = createVisibility(np.type, expand.getSubQuery(), false);
-                    } else {
-                        subLevel = createVisibility(np.type, null, false);
-                    }
-                    Visibility existingVis = level.expandVisibility.get(np);
-                    if (existingVis != null) {
-                        subLevel.merge(existingVis);
-                    }
-                    level.expandVisibility.put(np, subLevel);
-                    level = subLevel;
+        if (query == null) {
+            return v;
+        }
+        if (!query.getSelect().isEmpty()) {
+            for (Property select : query.getSelect()) {
+                v.visibleProperties.add(select);
+                if (select instanceof NavigationProperty) {
+                    v.navLinkProperties.add((NavigationProperty) select);
                 }
             }
         }
+
+        for (Expand expand : query.getExpand()) {
+            expandVisibility(v, expand);
+        }
         return v;
+    }
+
+    private static void expandVisibility(Visibility v, Expand expand) {
+        List<NavigationProperty> expPath = expand.getPath();
+        Visibility level = v;
+        for (int i = 0; i < expPath.size(); i++) {
+            NavigationProperty np = expPath.get(i);
+            Visibility subLevel;
+            if (i == expPath.size() - 1) {
+                subLevel = createVisibility(np.type, expand.getSubQuery(), false);
+            } else {
+                subLevel = createVisibility(np.type, null, false);
+            }
+            Visibility existingVis = level.expandVisibility.get(np);
+            if (existingVis != null) {
+                subLevel.merge(existingVis);
+            }
+            level.expandVisibility.put(np, subLevel);
+            level = subLevel;
+        }
     }
 
     private static void copyEntityProperties(Set<Property> from, Set<Property> to) {
@@ -200,14 +203,6 @@ public class VisibilityHelper {
     }
 
     private static void copyNavigationProperties(Set<Property> from, Set<NavigationProperty> to) {
-        for (Property p : from) {
-            if (NavigationProperty.class.isAssignableFrom(p.getClass())) {
-                to.add((NavigationProperty) p);
-            }
-        }
-    }
-
-    private static void copyNavigationProperties2(Set<Property> from, Set<Property> to) {
         for (Property p : from) {
             if (NavigationProperty.class.isAssignableFrom(p.getClass())) {
                 to.add((NavigationProperty) p);

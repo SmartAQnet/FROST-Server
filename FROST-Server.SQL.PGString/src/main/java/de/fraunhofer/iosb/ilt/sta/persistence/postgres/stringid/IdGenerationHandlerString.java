@@ -47,13 +47,7 @@ public class IdGenerationHandlerString extends IdGenerationHandler {
      */
     @Override
     public void modifyClientSuppliedId() {
-        if (!validateClientSuppliedId()) {
-            return;
-        }
-
-        // add parsing here
-        // String idvalue = (String) getIdValue() + "_testing";
-        // entity.setId(new IdString(idvalue));
+        // Nothing to do for now.
     }
 
     /**
@@ -64,11 +58,6 @@ public class IdGenerationHandlerString extends IdGenerationHandler {
      */
     @Override
     protected boolean validateClientSuppliedId() {
-        if (getIdValue() == null) {
-            return false;
-        }
-
-        // add additional checks here
-        return true;
+        return getIdValue() != null;
     }
 }

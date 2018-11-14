@@ -17,16 +17,53 @@
  */
 package de.fraunhofer.iosb.ilt.sta.persistence.postgres;
 
-import static de.fraunhofer.iosb.ilt.sta.persistence.postgres.PostgresPersistenceManager.TAG_DATA_SOURCE;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.SimpleExpression;
+import com.querydsl.sql.SQLQuery;
+import com.querydsl.sql.SQLQueryFactory;
+import com.querydsl.sql.SQLTemplates;
+import com.querydsl.sql.dml.SQLDeleteClause;
+import com.querydsl.sql.spatial.PostGISTemplates;
+import de.fraunhofer.iosb.ilt.sta.messagebus.EntityChangedMessage;
+import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
+import de.fraunhofer.iosb.ilt.sta.model.core.Id;
+import de.fraunhofer.iosb.ilt.sta.path.EntityPathElement;
+import de.fraunhofer.iosb.ilt.sta.path.EntityProperty;
+import de.fraunhofer.iosb.ilt.sta.path.EntitySetPathElement;
+import de.fraunhofer.iosb.ilt.sta.path.EntityType;
+import de.fraunhofer.iosb.ilt.sta.path.ResourcePath;
+import de.fraunhofer.iosb.ilt.sta.path.ResourcePathElement;
+import de.fraunhofer.iosb.ilt.sta.persistence.AbstractPersistenceManager;
+import de.fraunhofer.iosb.ilt.sta.persistence.postgres.factories.EntityFactory;
+import de.fraunhofer.iosb.ilt.sta.query.Query;
+import de.fraunhofer.iosb.ilt.sta.settings.CoreSettings;
 import de.fraunhofer.iosb.ilt.sta.settings.Settings;
+import de.fraunhofer.iosb.ilt.sta.util.IncompleteEntityException;
+import de.fraunhofer.iosb.ilt.sta.util.NoSuchEntityException;
+import de.fraunhofer.iosb.ilt.sta.util.UpgradeFailedException;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import javax.inject.Provider;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+import liquibase.Contexts;
+import liquibase.Liquibase;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.DatabaseException;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.ConnectionFactory;
 import org.apache.commons.dbcp2.DriverManagerConnectionFactory;
@@ -40,16 +77,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author scf
+ * @param <I> The type of path used for the ID fields.
+ * @param <J> The type of the ID fields.
  */
-public interface PostgresPersistenceManager {
+public abstract class PostgresPersistenceManager<I extends SimpleExpression<J> & Path<J>, J> extends AbstractPersistenceManager {
 
     public static final String TAG_DATA_SOURCE = "db.jndi.datasource";
     public static final String TAG_DB_DRIVER = "db.driver";
     public static final String TAG_DB_URL = "db.url";
     public static final String TAG_DB_USERNAME = "db.username";
-    public static final String TAG_DB_PASSWORD = "db.password";
+    public static final String TAG_DB_PASSWRD = "db.password";
     public static final String TAG_DB_MAXCONN = "db.conn.max";
     public static final String TAG_DB_MAXIDLE = "db.conn.idle.max";
     public static final String TAG_DB_MINIDLE = "db.conn.idle.min";
@@ -63,6 +101,303 @@ public interface PostgresPersistenceManager {
     static final Logger LOGGER = LoggerFactory.getLogger(PostgresPersistenceManager.class);
 
     static Map<String, ConnectionSource> existingPools = new HashMap<>();
+
+    private static class MyConnectionWrapper implements Provider<Connection> {
+
+        private final CoreSettings settings;
+        private Connection connection;
+
+        public MyConnectionWrapper(CoreSettings settings) {
+            this.settings = settings;
+        }
+
+        @Override
+        public Connection get() {
+            if (connection == null) {
+                try {
+                    connection = getConnection(settings);
+                } catch (SQLException ex) {
+                    LOGGER.error("Could not inizialize " + getClass().getName(), ex);
+                }
+            }
+            return connection;
+        }
+
+        protected boolean doCommit() {
+            if (connection == null) {
+                return true;
+            }
+            try {
+                if (!get().isClosed()) {
+                    get().commit();
+                    return true;
+                }
+            } catch (SQLException ex) {
+                LOGGER.error("Exception rolling back.", ex);
+            }
+            return false;
+        }
+
+        protected boolean doRollback() {
+            if (connection == null) {
+                return true;
+            }
+            try {
+                if (!get().isClosed()) {
+                    LOGGER.debug("Rolling back changes.");
+                    get().rollback();
+                    return true;
+                }
+            } catch (SQLException ex) {
+                LOGGER.error("Exception rolling back.", ex);
+            }
+            return false;
+        }
+
+        protected boolean doClose() {
+            if (connection == null) {
+                return true;
+            }
+            try {
+                get().close();
+                return true;
+            } catch (SQLException ex) {
+                LOGGER.error("Exception closing.", ex);
+            } finally {
+                clear();
+            }
+            return false;
+        }
+
+        public void clear() {
+            connection = null;
+        }
+
+    }
+
+    private CoreSettings settings;
+    private MyConnectionWrapper connectionProvider;
+    private SQLQueryFactory queryFactory;
+
+    @Override
+    public void init(CoreSettings settings) {
+        this.settings = settings;
+        connectionProvider = new MyConnectionWrapper(settings);
+    }
+
+    @Override
+    public CoreSettings getCoreSettings() {
+        return settings;
+    }
+
+    public abstract EntityFactories<I, J> getEntityFactories();
+
+    public abstract IdGenerationHandler createIdGenerationHanlder(Entity e);
+
+    public SQLQueryFactory createQueryFactory() {
+        if (queryFactory == null) {
+            SQLTemplates templates = PostGISTemplates.builder().quote().build();
+            queryFactory = new SQLQueryFactory(templates, connectionProvider);
+        }
+        return queryFactory;
+    }
+
+    public abstract PropertyResolver<I, J> getPropertyResolver();
+
+    public abstract String getLiquibaseChangelogFilename();
+
+    public long count(ResourcePath path, Query query) {
+        SQLQueryFactory qf = createQueryFactory();
+        PathSqlBuilderImp psb = new PathSqlBuilderImp(getPropertyResolver());
+        SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, getCoreSettings().getPersistenceSettings());
+        return sqlQuery.fetchCount();
+    }
+
+    @Override
+    public boolean validatePath(ResourcePath path) {
+        ResourcePathElement element = path.getIdentifiedElement();
+        if (element == null) {
+            return true;
+        }
+        ResourcePath tempPath = new ResourcePath();
+        List<ResourcePathElement> elements = tempPath.getPathElements();
+        while (element != null) {
+            elements.add(0, element);
+            element = element.getParent();
+        }
+        return getEntityFactories().entityExists(this, tempPath);
+    }
+
+    @Override
+    public Entity get(EntityType entityType, Id id) {
+        SQLQueryFactory qf = createQueryFactory();
+        PathSqlBuilder psb = new PathSqlBuilderImp(getPropertyResolver());
+        SQLQuery<Tuple> sqlQuery = psb.buildFor(entityType, id, qf, getCoreSettings().getPersistenceSettings());
+        sqlQuery.limit(2);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Generated SQL:\n{}", sqlQuery.getSQL().getSQL());
+        }
+        List<Tuple> results = sqlQuery.fetch();
+
+        EntityFactory<? extends Entity, I, J> factory;
+        factory = getEntityFactories().getFactoryFor(entityType);
+        return factory.create(results.get(0), null, new DataSize());
+    }
+
+    @Override
+    public Object get(ResourcePath path, Query query) {
+        ResourcePathElement lastElement = path.getLastElement();
+        if (!(lastElement instanceof EntityPathElement) && !(lastElement instanceof EntitySetPathElement)) {
+            if (!query.getExpand().isEmpty()) {
+                LOGGER.warn("Expand only allowed on Entities or EntitySets. Not on {}!", lastElement.getClass());
+                query.getExpand().clear();
+            }
+            if (!query.getSelect().isEmpty()) {
+                LOGGER.warn("Select only allowed on Entities or EntitySets. Not on {}!", lastElement.getClass());
+                query.getSelect().clear();
+            }
+        }
+
+        SQLQueryFactory qf = createQueryFactory();
+        PathSqlBuilderImp psb = new PathSqlBuilderImp(getPropertyResolver());
+        SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, getCoreSettings().getPersistenceSettings());
+
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Generated SQL:\n{}", sqlQuery.getSQL().getSQL());
+        }
+
+        EntityCreator entityCreator = new EntityCreator(this, path, query, sqlQuery);
+        lastElement.visit(entityCreator);
+        Object entity = entityCreator.getEntity();
+
+        if (path.isValue() && entity instanceof Map) {
+            Map map = (Map) entity;
+            entity = map.get(entityCreator.getEntityName());
+        }
+
+        return entity;
+    }
+
+    @Override
+    public boolean doInsert(Entity entity) throws NoSuchEntityException, IncompleteEntityException {
+        EntityFactories<I, J> ef = getEntityFactories();
+        EntityFactory<Entity, I, J> factory = ef.getFactoryFor(entity.getEntityType());
+        factory.insert(this, entity);
+        return true;
+    }
+
+    @Override
+    public EntityChangedMessage doUpdate(EntityPathElement pathElement, Entity entity) throws NoSuchEntityException, IncompleteEntityException {
+        EntityFactories<I, J> ef = getEntityFactories();
+
+        entity.setId(pathElement.getId());
+        J id = (J) pathElement.getId().getValue();
+        if (!ef.entityExists(this, entity)) {
+            throw new NoSuchEntityException("No entity of type " + pathElement.getEntityType() + " with id " + id);
+        }
+
+        EntityFactory<Entity, I, J> factory = ef.getFactoryFor(entity.getEntityType());
+        return factory.update(this, entity, id);
+    }
+
+    @Override
+    public boolean doDelete(EntityPathElement pathElement) throws NoSuchEntityException {
+        EntityFactories<I, J> ef = getEntityFactories();
+        EntityType type = pathElement.getEntityType();
+        EntityFactory<Entity, I, J> factory = ef.getFactoryFor(type);
+        factory.delete(this, (J) pathElement.getId().getValue());
+        return true;
+    }
+
+    @Override
+    public void doDelete(ResourcePath path, Query query) {
+        query.setSelect(Arrays.asList(EntityProperty.ID));
+        SQLQueryFactory qf = createQueryFactory();
+        PathSqlBuilderImp psb = new PathSqlBuilderImp(getPropertyResolver());
+
+        SQLQuery<Tuple> sqlQuery = psb.buildFor(path, query, qf, getCoreSettings().getPersistenceSettings());
+        SQLDeleteClause sqlDelete = psb.createDelete((EntitySetPathElement) path.getLastElement(), qf, sqlQuery);
+
+        long rowCount = sqlDelete.execute();
+        LOGGER.debug("Deleted {} rows using query {}", rowCount, sqlDelete);
+    }
+
+    @Override
+    protected boolean doCommit() {
+        return connectionProvider.doCommit();
+    }
+
+    @Override
+    protected boolean doRollback() {
+        return connectionProvider.doRollback();
+    }
+
+    @Override
+    protected boolean doClose() {
+        return connectionProvider.doClose();
+    }
+
+    @Override
+    public String checkForUpgrades() {
+        StringWriter out = new StringWriter();
+        try {
+            Connection connection = getConnection(getCoreSettings());
+
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            Liquibase liquibase = new liquibase.Liquibase(getLiquibaseChangelogFilename(), new ClassLoaderResourceAccessor(), database);
+            liquibase.update(new Contexts(), out);
+            database.commit();
+            database.close();
+            connection.close();
+
+        } catch (SQLException | DatabaseException ex) {
+            LOGGER.error("Could not initialise database.", ex);
+            out.append("Failed to initialise database:\n");
+            out.append(ex.getLocalizedMessage());
+            out.append("\n");
+        } catch (LiquibaseException ex) {
+            LOGGER.error("Could not upgrade database.", ex);
+            out.append("Failed to upgrade database:\n");
+            out.append(ex.getLocalizedMessage());
+            out.append("\n");
+        }
+        return out.toString();
+    }
+
+    @Override
+    public boolean doUpgrades(Writer out) throws UpgradeFailedException, IOException {
+        try {
+            Connection connection = getConnection(getCoreSettings());
+
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            Liquibase liquibase = new liquibase.Liquibase(getLiquibaseChangelogFilename(), new ClassLoaderResourceAccessor(), database);
+            liquibase.update(new Contexts());
+            database.commit();
+            database.close();
+            connection.close();
+
+        } catch (SQLException | DatabaseException ex) {
+            LOGGER.error("Could not initialise database.", ex);
+            out.append("Failed to initialise database:\n");
+            out.append(ex.getLocalizedMessage());
+            out.append("\n");
+            return false;
+
+        } catch (LiquibaseException ex) {
+            out.append("Failed to upgrade database:\n");
+            out.append(ex.getLocalizedMessage());
+            out.append("\n");
+            throw new UpgradeFailedException(ex);
+        }
+        return true;
+    }
+
+    public static Connection getConnection(CoreSettings settings) throws SQLException {
+        Settings customSettings = settings.getPersistenceSettings().getCustomSettings();
+        Connection connection = PostgresPersistenceManager.getPoolingConnection("FROST-Source", customSettings);
+        connection.setAutoCommit(false);
+        return connection;
+    }
 
     /**
      * Creates a connection, setting up a new pool if needed.
@@ -81,14 +416,14 @@ public interface PostgresPersistenceManager {
         return source.getConnection();
     }
 
-    static ConnectionSource createPoolingConnection(String name, Settings settings) throws SQLException {
+    static ConnectionSource createPoolingConnection(String name, Settings settings) {
         synchronized (existingPools) {
             ConnectionSource source = existingPools.get(name);
             if (source == null) {
-                if (settings.containsName(TAG_DATA_SOURCE) && !settings.get(TAG_DATA_SOURCE).isEmpty()) {
-                    source = setupDataSource(settings);
-                } else {
+                if (settings.containsName(TAG_DB_URL) && !settings.get(TAG_DB_URL).isEmpty()) {
                     source = setupBasicDataSource(settings);
+                } else {
+                    source = setupDataSource(settings);
                 }
                 existingPools.put(name, source);
             }
@@ -107,13 +442,12 @@ public interface PostgresPersistenceManager {
             BasicDataSource ds = new BasicDataSource();
             ds.setUrl(settings.get(TAG_DB_URL));
             ds.setUsername(settings.get(TAG_DB_USERNAME));
-            ds.setPassword(settings.get(TAG_DB_PASSWORD));
+            ds.setPassword(settings.get(TAG_DB_PASSWRD));
             ds.setMaxIdle(settings.getInt(TAG_DB_MAXIDLE, ds.getMaxIdle()));
             ds.setMaxTotal(settings.getInt(TAG_DB_MAXCONN, ds.getMaxTotal()));
             ds.setMinIdle(settings.getInt(TAG_DB_MINIDLE, ds.getMinIdle()));
             return new ConnectionSourceBasicDataSource(ds);
         } catch (ClassNotFoundException exc) {
-            LOGGER.error("Failed to set up a Connection pool for the database.", exc);
             throw new IllegalArgumentException(exc);
         }
     }
@@ -126,10 +460,6 @@ public interface PostgresPersistenceManager {
                 throw new IllegalArgumentException("Setting " + TAG_DATA_SOURCE + " must not be empty.");
             }
             InitialContext cxt = new InitialContext();
-            if (cxt == null) {
-                throw new IllegalStateException("No context!");
-            }
-
             DataSource ds = (DataSource) cxt.lookup("java:/comp/env/" + dataSourceName);
             if (ds == null) {
                 throw new IllegalStateException("Data source not found!");
@@ -152,9 +482,8 @@ public interface PostgresPersistenceManager {
                     name,
                     settings.get(TAG_DB_URL),
                     settings.get(TAG_DB_USERNAME),
-                    settings.get(TAG_DB_PASSWORD));
+                    settings.get(TAG_DB_PASSWRD));
         } catch (ClassNotFoundException | SQLException exc) {
-            LOGGER.error("Failed to set up a Connection pool for the database.", exc);
             throw new IllegalArgumentException(exc);
         }
         return new ConnectionSourceDriverManager("jdbc:apache:commons:dbcp:" + name);

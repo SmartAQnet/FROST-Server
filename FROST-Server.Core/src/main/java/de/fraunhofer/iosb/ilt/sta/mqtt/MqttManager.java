@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016 Fraunhofer IOSB
+ * Copyright (C) 2016 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
+ * Karlsruhe, Germany.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package de.fraunhofer.iosb.ilt.sta.mqtt;
@@ -111,14 +112,14 @@ public class MqttManager implements SubscriptionListener, MessageListener, Entit
             entityChangedExecutorService = ProcessorHelper.createProcessors(
                     mqttSettings.getSubscribeThreadPoolSize(),
                     entityChangedEventQueue,
-                    x -> handleEntityChangedEvent(x),
+                    this::handleEntityChangedEvent,
                     "MqttManager EntityChangedEventProcessor");
             // start watching for ObservationCreateEvents
             observationCreateEventQueue = new ArrayBlockingQueue<>(mqttSettings.getCreateMessageQueueSize());
             observationCreateExecutorService = ProcessorHelper.createProcessors(
                     mqttSettings.getCreateThreadPoolSize(),
                     observationCreateEventQueue,
-                    x -> handleObservationCreateEvent(x),
+                    this::handleObservationCreateEvent,
                     "MqttManager ObservationCreateEventProcessor");
             // start MQTT server
             server = MqttServerFactory.getInstance().get(settings);
@@ -157,25 +158,28 @@ public class MqttManager implements SubscriptionListener, MessageListener, Entit
         }
         PersistenceManager persistenceManager = PersistenceManagerFactory.getInstance().create();
         // Send a complete entity through the bus, or just an entity-id?
-        //Entity entity = persistenceManager.getEntityById(settings.getServiceRootUrl(), entityType, message.getEntity().getId());
         Entity entity = message.getEntity();
         Set<Property> fields = message.getFields();
         try {
             // for each subscription on EntityType check match
             for (Subscription subscription : subscriptions.get(entityType).keySet()) {
                 if (subscription.matches(persistenceManager, entity, fields)) {
-                    try {
-                        String payload = subscription.formatMessage(entity);
-                        server.publish(subscription.getTopic(), payload.getBytes(StringHelper.ENCODING), settings.getMqttSettings().getQosLevel());
-                    } catch (IOException ex) {
-                        LOGGER.error("publishing to MQTT on topic '" + subscription.getTopic() + "' failed", ex);
-                    }
+                    notifySubscription(subscription, entity);
                 }
             }
         } catch (Exception ex) {
             LOGGER.error("error handling MQTT subscriptions", ex);
         } finally {
             persistenceManager.close();
+        }
+    }
+
+    private void notifySubscription(Subscription subscription, Entity entity) {
+        try {
+            String payload = subscription.formatMessage(entity);
+            server.publish(subscription.getTopic(), payload.getBytes(StringHelper.ENCODING), settings.getMqttSettings().getQosLevel());
+        } catch (IOException ex) {
+            LOGGER.error("publishing to MQTT on topic '" + subscription.getTopic() + "' failed", ex);
         }
     }
 
@@ -188,7 +192,7 @@ public class MqttManager implements SubscriptionListener, MessageListener, Entit
         }
         String url = topic.replaceFirst(settings.getApiVersion(), "");
         ServiceResponse<Observation> response = new Service(settings).execute(new ServiceRequestBuilder()
-                .withRequestType(RequestType.Create)
+                .withRequestType(RequestType.CREATE)
                 .withContent(e.getPayload())
                 .withUrlPath(url)
                 .build());
@@ -205,7 +209,7 @@ public class MqttManager implements SubscriptionListener, MessageListener, Entit
             return;
         }
         if (!entityChangedEventQueue.offer(e)) {
-            LOGGER.warn("EntityChangedevent discarded because message queue is full {}! Increase mqtt.CreateMessageQueueSize and/or mqtt.CreateThreadPoolSize.", entityChangedEventQueue.size());
+            LOGGER.warn("EntityChangedevent discarded because message queue is full {}! Increase mqtt.SubscribeMessageQueueSize and/or mqtt.SubscribeThreadPoolSize.", entityChangedEventQueue.size());
         }
     }
 
@@ -246,7 +250,7 @@ public class MqttManager implements SubscriptionListener, MessageListener, Entit
                 LOGGER.debug("Now {} subscriptions for topic {}.", newCount, subscription.getTopic());
                 if (newCount <= 0) {
                     subscriptionsMap.remove(subscription);
-                    LOGGER.debug("Removed subscription for topic {}.", newCount, subscription.getTopic());
+                    LOGGER.debug("Removed last subscription for topic {}.", subscription.getTopic());
                 }
             }
         }

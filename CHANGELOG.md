@@ -1,13 +1,27 @@
+# Release Version 1.9
+Version 1.9 is not released yet.
+
+**New Features**
+* Added experimental DELETE on Collections, with filters. Allows easier data cleanup.
+  See https://github.com/opengeospatial/sensorthings/issues/44
+* Added experimental way to change the location of a Thing, without generating a
+  HistoricalLocation with a time of now(). See #66 and https://github.com/opengeospatial/sensorthings/issues/30
+
 
 # Release Version 1.8
-Version 1.8 is not released yet.
+Version 1.8 was released on 2018-08-24.
 
 **New Features**
 * Upgraded moquette to v0.11.
 * Allow setting of the moquette persistent store path and storage class.
+* Enabling the tomcat CorsFilter to allow cross-site-scripting can be done from environment variables.
+* Added option to automatically run the liquibase database upgrade.
 
 **Bugfixes**
 * Fixed #59, incorrect nextLink when filtering on unitOfMeasurement/name.
+* Fixed `MultiDatastream.observationType` being required even though we set it automatically.
+* Prioritise `persistence_db_url` over `persistence_db_jndi_datasource`. This way there is no longer the need to add an empty environment variable `persistence_db_jndi_datasource` for the HTTP and MQTTP component when configuring using environment variables.
+* Fixed string ids in next- and selfLink not being urlEncoded.
 
 
 # Release Version 1.7

@@ -24,6 +24,7 @@ import java.util.Objects;
  */
 public class CustomProperty implements Property {
 
+    private static final String UNSUPPORTED = "Not supported on custom properties.";
     /**
      * The name of this property as used in URLs.
      */
@@ -69,17 +70,17 @@ public class CustomProperty implements Property {
 
     @Override
     public String getGetterName() {
-        throw new UnsupportedOperationException("Not supported on custom properties.");
+        throw new UnsupportedOperationException(UNSUPPORTED);
     }
 
     @Override
     public String getSetterName() {
-        throw new UnsupportedOperationException("Not supported on custom properties.");
+        throw new UnsupportedOperationException(UNSUPPORTED);
     }
 
     @Override
     public String getIsSetName() {
-        throw new UnsupportedOperationException("Not supported on custom properties.");
+        throw new UnsupportedOperationException(UNSUPPORTED);
     }
 
     @Override
@@ -93,10 +94,7 @@ public class CustomProperty implements Property {
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 17 * hash + Objects.hashCode(this.name);
-        hash = 17 * hash + Objects.hashCode(this.index);
-        return hash;
+        return Objects.hash(name, index);
     }
 
     @Override
@@ -111,10 +109,8 @@ public class CustomProperty implements Property {
             return false;
         }
         final CustomProperty other = (CustomProperty) obj;
-        if (!Objects.equals(this.name, other.name)) {
-            return false;
-        }
-        return Objects.equals(this.index, other.index);
+        return Objects.equals(this.name, other.name)
+                && Objects.equals(this.index, other.index);
     }
 
 }

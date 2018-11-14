@@ -24,14 +24,12 @@ import com.querydsl.core.types.QTuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.ComparableExpression;
 import com.querydsl.core.types.dsl.ComparableExpressionBase;
-import com.querydsl.core.types.dsl.DateExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.core.types.dsl.StringExpression;
-import com.querydsl.core.types.dsl.TimeTemplate;
 import com.querydsl.spatial.GeometryExpression;
 import com.querydsl.sql.SQLExpressions;
 import com.querydsl.sql.SQLQuery;
@@ -137,6 +135,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import org.geojson.GeoJsonObject;
 import org.geolatte.geom.Geometry;
 import org.geolatte.geom.codec.Wkt;
 import org.joda.time.DateTime;
@@ -151,7 +150,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Hylke van der Schaaf
  */
-public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
+public class PgExpressionHandler implements ExpressionVisitor<Expression> {
 
     /**
      * The logger for this class.
@@ -169,14 +168,14 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
     }
 
     public void addFilterToQuery(de.fraunhofer.iosb.ilt.sta.query.expression.Expression filter, SQLQuery<Tuple> sqlQuery) {
-        Expression<?> filterExpression = filter.accept(this);
+        Expression filterExpression = filter.accept(this);
         if (filterExpression instanceof Predicate) {
             Predicate predicate = (Predicate) filterExpression;
             sqlQuery.where(predicate);
             return;
         } else if (filterExpression instanceof ListExpression) {
             ListExpression listExpression = (ListExpression) filterExpression;
-            for (Expression<?> expression : listExpression.getExpressions().values()) {
+            for (Expression expression : listExpression.getExpressions().values()) {
                 if (expression instanceof Predicate) {
                     Predicate predicate = (Predicate) expression;
                     sqlQuery.where(predicate);
@@ -189,7 +188,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
     }
 
     public void addOrderbyToQuery(OrderBy orderBy, SQLQuery<Tuple> sqlQuery) {
-        Expression<?> resultExpression = orderBy.getExpression().accept(this);
+        Expression resultExpression = orderBy.getExpression().accept(this);
         if (resultExpression instanceof StaTimeIntervalExpression) {
             StaTimeIntervalExpression ti = (StaTimeIntervalExpression) resultExpression;
             addToQuery(orderBy, ti.getStart(), sqlQuery);
@@ -204,7 +203,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
             addToQuery(orderBy, dateTime.getDateTime(), sqlQuery);
         }
         if (resultExpression instanceof ListExpression) {
-            for (Expression<?> sqlExpression : ((ListExpression) resultExpression).getExpressionsForOrder().values()) {
+            for (Expression sqlExpression : ((ListExpression) resultExpression).getExpressionsForOrder().values()) {
                 addToQuery(orderBy, sqlExpression, sqlQuery);
             }
         } else {
@@ -223,7 +222,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
                 sqlQuery.select(args.toArray(new Expression[args.size()]));
             }
 
-            if (orderBy.getType() == OrderBy.OrderType.Ascending) {
+            if (orderBy.getType() == OrderBy.OrderType.ASCENDING) {
                 sqlQuery.orderBy(comparable.asc());
             } else {
                 sqlQuery.orderBy(comparable.desc());
@@ -248,8 +247,8 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
     public static <T extends Expression<?>> T getSingleOfType(Class<T> expectedClazz, Expression<?> input) {
         if (input instanceof ListExpression) {
             ListExpression listExpression = (ListExpression) input;
-            Map<String, Expression<?>> expressions = listExpression.getExpressions();
-            Collection<Expression<?>> values = expressions.values();
+            Map<String, Expression> expressions = listExpression.getExpressions();
+            Collection<Expression> values = expressions.values();
             // Two passes, first do an exact check (no casting allowed)
             for (Expression<?> subResult : values) {
                 try {
@@ -310,7 +309,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         return state.finalExpression;
     }
 
-    private void handleCustomProperty(PathState state, Path path) throws IllegalArgumentException {
+    private void handleCustomProperty(PathState state, Path path) {
         if (state.finalExpression == null) {
             throw new IllegalArgumentException("CustomProperty must follow an EntityProperty: " + path);
         }
@@ -323,12 +322,12 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         state.finished = true;
     }
 
-    private void handleEntityProperty(PathState state, Path path, Property element) throws IllegalArgumentException {
+    private void handleEntityProperty(PathState state, Path path, Property element) {
         if (state.finalExpression != null) {
             throw new IllegalArgumentException("EntityProperty can not follow an other EntityProperty: " + path);
         }
         EntityProperty entityProperty = (EntityProperty) element;
-        Map<String, Expression<?>> pathExpressions = psb.expressionsForProperty(entityProperty, state.pathTableRef.getqPath(), new LinkedHashMap<>());
+        Map<String, Expression> pathExpressions = psb.expressionsForProperty(entityProperty, state.pathTableRef.getqPath(), new LinkedHashMap<>());
         if (pathExpressions.size() == 1) {
             state.finalExpression = pathExpressions.values().iterator().next();
         } else {
@@ -336,7 +335,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         }
     }
 
-    private void handleNavigationProperty(PathState state, Path path, Property element) throws IllegalArgumentException {
+    private void handleNavigationProperty(PathState state, Path path, Property element) {
         if (state.finalExpression != null) {
             throw new IllegalArgumentException("NavigationProperty can not follow an EntityProperty: " + path);
         }
@@ -344,7 +343,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         psb.queryEntityType(navigationProperty.getType(), null, state.pathTableRef);
     }
 
-    private Expression<?> getSubExpression(PathState state, Map<String, Expression<?>> pathExpressions) {
+    private Expression<?> getSubExpression(PathState state, Map<String, Expression> pathExpressions) {
         int nextIdx = state.curIndex + 1;
         if (state.elements.size() > nextIdx) {
             Property subProperty = state.elements.get(nextIdx);
@@ -353,7 +352,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
             if (!pathExpressions.containsKey(subProperty.getName()) && pathExpressions.containsKey("j")) {
                 return pathExpressions.get("j");
             }
-            // We can not accept json, so the subProperty must be a known name.
+            // We can not accept json, so the subProperty must be a known direction.
             state.finished = true;
             return pathExpressions.get(subProperty.getName());
         } else {
@@ -365,19 +364,21 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         }
     }
 
-    public Expression<?>[] findPair(Expression<?> p1, Expression<?> p2) {
+    public Expression[] findPair(Expression<?> p1, Expression<?> p2) {
         Expression<?>[] result = new Expression<?>[2];
         try {
             result[0] = getSingleOfType(NumberExpression.class, p1);
             result[1] = getSingleOfType(NumberExpression.class, p2);
             return result;
         } catch (IllegalArgumentException e) {
+            // Not of the requested type.
         }
         try {
             result[0] = getSingleOfType(BooleanExpression.class, p1);
             result[1] = getSingleOfType(BooleanExpression.class, p2);
             return result;
         } catch (IllegalArgumentException e) {
+            // Not of the requested type.
         }
         // If both are strings, use strings.
         boolean firstIsString = false;
@@ -387,6 +388,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
             result[1] = getSingleOfType(StringExpression.class, p2);
             return result;
         } catch (IllegalArgumentException e) {
+            // Not of the requested type.
         }
         // If one of the two is a string, cast the other
         if (firstIsString) {
@@ -398,6 +400,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
                 result[0] = StringCastExpressionFactory.build(p1);
                 return result;
             } catch (IllegalArgumentException e) {
+                // Not of the requested type.
             }
         }
 
@@ -416,8 +419,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         LocalDate date = node.getValue();
         Calendar instance = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         instance.set(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
-        ConstantDateExpression constant = new ConstantDateExpression(new java.sql.Date(instance.getTimeInMillis()));
-        return constant;
+        return new ConstantDateExpression(new java.sql.Date(instance.getTimeInMillis()));
     }
 
     @Override
@@ -448,8 +450,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
 
     @Override
     public Expression<?> visit(IntegerConstant node) {
-        ConstantNumberExpression constant = new ConstantNumberExpression(node.getValue());
-        return constant;
+        return new ConstantNumberExpression(node.getValue());
     }
 
     @Override
@@ -470,7 +471,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         return new ConstantGeometryExpression(geom);
     }
 
-    private Geometry fromGeoJsonConstant(GeoJsonConstant node) {
+    private Geometry fromGeoJsonConstant(GeoJsonConstant<? extends GeoJsonObject> node) {
         if (node.getValue().getCrs() == null) {
             return Wkt.fromWkt("SRID=4326;" + node.getSource());
         }
@@ -479,8 +480,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
 
     @Override
     public Expression<?> visit(StringConstant node) {
-        ConstantStringExpression constant = new ConstantStringExpression(node.getValue());
-        return constant;
+        return new ConstantStringExpression(node.getValue());
     }
 
     @Override
@@ -488,8 +488,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         LocalTime time = node.getValue();
         Calendar instance = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         instance.set(1970, 1, 1, time.getHourOfDay(), time.getMinuteOfHour(), time.getSecondOfMinute());
-        ConstantTimeExpression constant = new ConstantTimeExpression(new java.sql.Time(instance.getTimeInMillis()));
-        return constant;
+        return new ConstantTimeExpression(new java.sql.Time(instance.getTimeInMillis()));
     }
 
     @Override
@@ -819,8 +818,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         de.fraunhofer.iosb.ilt.sta.query.expression.Expression param = node.getParameters().get(0);
         Expression<?> input = param.accept(this);
         TimeExpression inExp = getSingleOfType(TimeExpression.class, input);
-        DateExpression date = SQLExpressions.date(inExp.getDateTime());
-        return date;
+        return SQLExpressions.date(inExp.getDateTime());
     }
 
     @Override
@@ -894,8 +892,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         if (!inExp.isUtc()) {
             throw new IllegalArgumentException("Constants passed to the time() function have to be in UTC.");
         }
-        TimeTemplate<java.sql.Time> time = Expressions.timeTemplate(java.sql.Time.class, "pg_catalog.time({0})", inExp.getDateTime());
-        return time;
+        return Expressions.timeTemplate(java.sql.Time.class, "pg_catalog.time({0})", inExp.getDateTime());
     }
 
     @Override
@@ -903,8 +900,7 @@ public class PgExpressionHandler implements ExpressionVisitor<Expression<?>> {
         de.fraunhofer.iosb.ilt.sta.query.expression.Expression param = node.getParameters().get(0);
         Expression<?> input = param.accept(this);
         TimeExpression inExp = getSingleOfType(TimeExpression.class, input);
-        NumberExpression<Integer> offset = Expressions.numberTemplate(Integer.class, "timezone({0})", inExp.getDateTime()).divide(60);
-        return offset;
+        return Expressions.numberTemplate(Integer.class, "timezone({0})", inExp.getDateTime()).divide(60);
     }
 
     @Override

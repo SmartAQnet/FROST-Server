@@ -21,6 +21,8 @@ package de.fraunhofer.iosb.ilt.sta.persistence.postgres;
 
 import de.fraunhofer.iosb.ilt.sta.model.core.Entity;
 import de.fraunhofer.iosb.ilt.sta.util.IncompleteEntityException;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,15 +35,33 @@ import org.slf4j.LoggerFactory;
 public abstract class IdGenerationHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IdGenerationHandler.class);
-    private static final String ERROR_MSG = "Error in IdGenerationHandler: ";
 
-    // idGenerationType
+    /**
+     * The possible id generation modes.
+     */
     private enum IdGenerationType {
-        ServerGeneratedOnly,
-        ServerAndClientGenerated,
-        ClientGeneratedOnly
-    };
-    private static IdGenerationType idGenerationMode = IdGenerationType.ServerGeneratedOnly;
+        SERVER_GENERATED_ONLY,
+        SERVER_AND_CLIENT_GENERATED,
+        CLIENT_GENERATED_ONLY;
+
+        private static final Map<String, IdGenerationType> aliases = new HashMap<>();
+
+        public static IdGenerationType findType(String input) {
+            if (aliases.isEmpty()) {
+                init();
+            }
+            return aliases.get(input.toLowerCase());
+        }
+
+        private static void init() {
+            for (IdGenerationType type : IdGenerationType.values()) {
+                aliases.put(type.name(), type);
+                aliases.put(type.name().replace("_", "").toLowerCase(), type);
+            }
+        }
+    }
+
+    private static IdGenerationType idGenerationMode = IdGenerationType.SERVER_GENERATED_ONLY;
 
     private final Entity entity;
 
@@ -63,13 +83,13 @@ public abstract class IdGenerationHandler {
      * @throws IllegalArgumentException Will be thrown if given idGenerationMode
      * is not supported.
      */
-    public static void setIdGenerationMode(String mode) throws IllegalArgumentException {
-        try {
-            idGenerationMode = IdGenerationType.valueOf(mode);
-        } catch (IllegalArgumentException ex) {
+    public static void setIdGenerationMode(String mode) {
+        idGenerationMode = IdGenerationType.findType(mode);
+        if (idGenerationMode == null) {
             // not a valid generation mode
-            LOGGER.error(ERROR_MSG + "idGenerationMode '" + mode + "' is not supported.");
-            throw new IllegalArgumentException(ERROR_MSG + "idGenerationMode '" + mode + "' is not supported.");
+            String error = "Unknown idGenerationMode: " + mode + ".";
+            LOGGER.error(error);
+            throw new IllegalArgumentException(error);
         }
     }
 
@@ -111,9 +131,9 @@ public abstract class IdGenerationHandler {
      * @throws IllegalArgumentException Will be thrown if idGenerationMode is
      * not supported.
      */
-    public boolean useClientSuppliedId() throws IncompleteEntityException, IllegalArgumentException {
+    public boolean useClientSuppliedId() throws IncompleteEntityException {
         switch (idGenerationMode) {
-            case ServerGeneratedOnly:
+            case SERVER_GENERATED_ONLY:
                 if (getIdValue() == null) {
                     LOGGER.trace("Using server generated id.");
                     return false;
@@ -122,24 +142,24 @@ public abstract class IdGenerationHandler {
                     return false;
                 }
 
-            case ServerAndClientGenerated:
+            case SERVER_AND_CLIENT_GENERATED:
                 if (!validateClientSuppliedId()) {
                     LOGGER.debug("No valid @iot.id. Using server generated id.");
                     return false;
                 }
                 break;
 
-            case ClientGeneratedOnly:
+            case CLIENT_GENERATED_ONLY:
                 if (!validateClientSuppliedId()) {
-                    LOGGER.error("{}No @iot.id and idGenerationMode is '{}'", ERROR_MSG, idGenerationMode);
+                    LOGGER.error("No @iot.id and idGenerationMode is '{}'", idGenerationMode);
                     throw new IncompleteEntityException("Error: no @iot.id");
                 }
                 break;
 
             default:
                 // not a valid generation mode
-                LOGGER.error("{}idGenerationMode '{}' is not supported.", ERROR_MSG, idGenerationMode);
-                throw new IllegalArgumentException(ERROR_MSG + "idGenerationMode '" + idGenerationMode.toString() + "' is not supported.");
+                LOGGER.error("idGenerationMode '{}' is not implemented.", idGenerationMode);
+                throw new IllegalArgumentException("idGenerationMode '" + idGenerationMode.toString() + "' is not implemented.");
         }
 
         LOGGER.info("Using client generated id.");

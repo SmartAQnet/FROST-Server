@@ -102,11 +102,7 @@ public class MoquetteMqttServer implements MqttServer {
                 LOGGER.warn("MQTT client is not connected while trying to publish.");
             } else {
                 try {
-                    synchronized (client) {
-                        LOGGER.trace("Publishing on {}.", topic);
-                        client.publish(topic, payload, qos, false);
-                        LOGGER.trace("Publish done  {}.", topic);
-                    }
+                    client.publish(topic, payload, qos, false);
                 } catch (MqttException ex) {
                     LOGGER.error("publish on topic '" + topic + "' failed.", ex);
                 }
@@ -183,9 +179,9 @@ public class MoquetteMqttServer implements MqttServer {
                 if (msg.getClientID().equalsIgnoreCase(clientId)) {
                     return;
                 }
-                clientSubscriptions.get(msg.getClientID()).stream().forEach((subscribedTopic) -> {
-                    fireUnsubscribe(new SubscriptionEvent(subscribedTopic));
-                });
+                clientSubscriptions.get(msg.getClientID()).stream().forEach(
+                        subscribedTopic -> fireUnsubscribe(new SubscriptionEvent(subscribedTopic))
+                );
                 clientSubscriptions.remove(msg.getClientID());
             }
 
@@ -221,11 +217,11 @@ public class MoquetteMqttServer implements MqttServer {
         config.setProperty(BrokerConstants.HOST_PROPERTY_NAME, mqttSettings.getHost());
         config.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, Boolean.TRUE.toString());
 
-        String default_persistent_store = Paths.get(settings.getTempPath(), BrokerConstants.DEFAULT_MOQUETTE_STORE_MAP_DB_FILENAME).toString();
-        String persistent_store = mqttSettings.getCustomSettings().get(
+        String defaultPersistentStore = Paths.get(settings.getTempPath(), BrokerConstants.DEFAULT_MOQUETTE_STORE_MAP_DB_FILENAME).toString();
+        String persistentStore = mqttSettings.getCustomSettings().get(
                 BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME,
-                default_persistent_store);
-        config.setProperty(BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME, persistent_store);
+                defaultPersistentStore);
+        config.setProperty(BrokerConstants.PERSISTENT_STORE_PROPERTY_NAME, persistentStore);
 
         String storageClass = mqttSettings.getCustomSettings().get(
                 BrokerConstants.STORAGE_CLASS_NAME,
@@ -239,24 +235,19 @@ public class MoquetteMqttServer implements MqttServer {
         try {
             mqttBroker.startServer(config, userHandlers);
             String broker = "tcp://" + mqttSettings.getInternalHost() + ":" + mqttSettings.getPort();
-            try {
-                client = new MqttClient(broker, clientId, new MemoryPersistence());
-                MqttConnectOptions connOpts = new MqttConnectOptions();
-                connOpts.setCleanSession(true);
-                connOpts.setKeepAliveInterval(30);
-                connOpts.setConnectionTimeout(30);
-                connOpts.setMaxInflight(maxInFlight);
-                LOGGER.info("paho-client connecting to broker: " + broker);
-                try {
-                    client.connect(connOpts);
-                    client.subscribe("#");
-                    LOGGER.info("paho-client connected to broker");
-                } catch (MqttException ex) {
-                    LOGGER.error("Could not connect to MQTT server.", ex);
-                }
-            } catch (MqttException ex) {
-                LOGGER.error("Could not create MQTT Client.", ex);
-            }
+
+            client = new MqttClient(broker, clientId, new MemoryPersistence());
+            MqttConnectOptions connOpts = new MqttConnectOptions();
+            connOpts.setCleanSession(true);
+            connOpts.setKeepAliveInterval(30);
+            connOpts.setConnectionTimeout(30);
+            connOpts.setMaxInflight(maxInFlight);
+            LOGGER.info("paho-client connecting to broker: {}", broker);
+
+            client.connect(connOpts);
+            LOGGER.info("paho-client connected to broker");
+        } catch (MqttException ex) {
+            LOGGER.error("Could not create MQTT Client.", ex);
         } catch (IOException ex) {
             LOGGER.error("Could not start MQTT server.", ex);
         }
@@ -273,11 +264,10 @@ public class MoquetteMqttServer implements MqttServer {
             }
             String topic = sub.getTopicFilter().toString();
             LOGGER.debug("Re-subscribing existing subscription for {} on {}.", subClientId, topic);
-            List<String> clientSubList = clientSubscriptions.get(subClientId);
-            if (clientSubList == null) {
-                clientSubList = new ArrayList<>();
-                clientSubscriptions.put(subClientId, clientSubList);
-            }
+            List<String> clientSubList = clientSubscriptions.computeIfAbsent(
+                    subClientId,
+                    k -> new ArrayList<>()
+            );
             try {
                 fireSubscribe(new SubscriptionEvent(topic));
                 clientSubList.add(topic);

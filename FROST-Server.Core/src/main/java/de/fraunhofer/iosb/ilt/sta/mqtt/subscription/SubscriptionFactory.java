@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016 Fraunhofer IOSB
+ * Copyright (C) 2016 Fraunhofer Institut IOSB, Fraunhoferstr. 1, D 76131
+ * Karlsruhe, Germany.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package de.fraunhofer.iosb.ilt.sta.mqtt.subscription;
@@ -36,8 +37,10 @@ import org.slf4j.LoggerFactory;
  */
 public class SubscriptionFactory {
 
+    private static final String URI_PATH_SEP = "/";
     private static SubscriptionFactory instance;
-    private static final Logger LOGGER = LoggerFactory.getLogger(Subscription.class);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionFactory.class);
 
     public static synchronized void init(CoreSettings settings) {
         if (instance == null) {
@@ -54,17 +57,17 @@ public class SubscriptionFactory {
 
     private static String getPathFromTopic(String topic) {
         String pathString = topic.contains("?")
-                ? topic.substring(0, topic.indexOf("?"))
+                ? topic.substring(0, topic.indexOf('?'))
                 : topic;
-        if (!pathString.startsWith("/")) {
-            pathString = "/" + pathString;
+        if (!pathString.startsWith(URI_PATH_SEP)) {
+            pathString = URI_PATH_SEP + pathString;
         }
         return pathString;
     }
 
     public static String getQueryFromTopic(String topic) {
         return topic.contains("?")
-                ? topic.substring(topic.indexOf("?") + 1)
+                ? topic.substring(topic.indexOf('?') + 1)
                 : "";
     }
     private final CoreSettings settings;
@@ -80,8 +83,8 @@ public class SubscriptionFactory {
         if (topic == null || topic.isEmpty()) {
             throw new IllegalArgumentException(errorMsg + "topic must be non-empty.");
         }
-        if (topic.startsWith("/")) {
-            throw new IllegalArgumentException(errorMsg + "topic must not start with '/'.");
+        if (topic.startsWith(URI_PATH_SEP)) {
+            throw new IllegalArgumentException(errorMsg + "topic must not start with '" + URI_PATH_SEP + "'.");
         }
         String internalTopic = topic;
         String topicPrefix = settings.getMqttSettings().getTopicPrefix();
@@ -126,7 +129,7 @@ public class SubscriptionFactory {
         } catch (NumberFormatException e) {
             LOGGER.error("Not a valid id.");
         } catch (IllegalStateException e) {
-            LOGGER.error("Not a valid path: " + e.getMessage());
+            LOGGER.error("Not a valid path: {}", e.getMessage());
         }
         return result;
     }

@@ -18,6 +18,7 @@
 package de.fraunhofer.iosb.ilt.sta.model.core;
 
 import de.fraunhofer.iosb.ilt.sta.persistence.BasicPersistenceType;
+import de.fraunhofer.iosb.ilt.sta.util.UrlHelper;
 import java.util.Objects;
 
 /**
@@ -34,7 +35,7 @@ public class IdString implements Id {
 
     @Override
     public BasicPersistenceType getBasicPersistenceType() {
-        return BasicPersistenceType.String;
+        return BasicPersistenceType.STRING;
     }
 
     @Override
@@ -48,10 +49,15 @@ public class IdString implements Id {
     }
 
     @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 53 * hash + Objects.hashCode(this.value);
-        return hash;
+    public String getValue() {
+        return value;
+    }
+
+    @Override
+    public String getUrl() {
+        return "'"
+                + UrlHelper.urlEncode(UrlHelper.escapeForStringConstant(value), true)
+                + "'";
     }
 
     @Override
@@ -66,28 +72,17 @@ public class IdString implements Id {
             return false;
         }
         final IdString other = (IdString) obj;
-        if (!Objects.equals(this.value, other.value)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.value, other.value);
     }
 
     @Override
-    public String getValue() {
-        return value;
-    }
-
-    @Override
-    public String getUrl() {
-        return "'" + value + "'";
+    public int hashCode() {
+        return Objects.hash(value);
     }
 
     @Override
     public String toString() {
-        if (value == null) {
-            return "null";
-        }
-        return value;
+        return Objects.toString(getValue());
     }
 
 }

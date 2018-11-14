@@ -18,7 +18,6 @@
 package de.fraunhofer.iosb.ilt.sta.json.deserialize.custom;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -33,6 +32,8 @@ import de.fraunhofer.iosb.ilt.sta.path.NavigationProperty;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -40,15 +41,20 @@ import java.util.Map;
  */
 public class CustomEntityChangedMessageDeserializer extends JsonDeserializer<EntityChangedMessage> {
 
+    /**
+     * The logger for this class.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomEntityChangedMessageDeserializer.class);
+
     @Override
-    public EntityChangedMessage deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public EntityChangedMessage deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
         EntityChangedMessage message = new EntityChangedMessage();
         ObjectMapper mapper = (ObjectMapper) parser.getCodec();
-        JsonNode obj = (JsonNode) mapper.readTree(parser);
+        JsonNode obj = mapper.readTree(parser);
         Iterator<Map.Entry<String, JsonNode>> i = obj.fields();
         EntityType type = null;
         JsonNode entityJson = null;
-        for (; i.hasNext();) {
+        while (i.hasNext()) {
             Map.Entry<String, JsonNode> next = i.next();
             String name = next.getKey();
             JsonNode value = next.getValue();
@@ -79,6 +85,9 @@ public class CustomEntityChangedMessageDeserializer extends JsonDeserializer<Ent
                     entityJson = value;
                     break;
 
+                default:
+                    LOGGER.warn("Unknown field in message: {}", name);
+                    break;
             }
         }
         if (type == null || entityJson == null) {
